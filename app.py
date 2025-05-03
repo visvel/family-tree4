@@ -119,7 +119,7 @@ def get_d3_tree_html(tree_data):
 st.set_page_config(layout="wide")
 st.title("Interactive Family Tree")
 
-params = st.experimental_get_query_params()
+params = st.st.query_params
 query_id = params.get("id", ["P1"])[0]
 tree_data = load_family_tree_from_db(query_id)
 
