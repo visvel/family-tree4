@@ -118,6 +118,7 @@
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
+        // Husband block
         g.append("rect")
           .attr("x", -70)
           .attr("y", -20)
@@ -125,7 +126,7 @@
           .attr("height", 40)
           .attr("fill", "#e6f0ff")
           .attr("stroke", "#333")
-          .classed("highlighted", d.data.husband.id === highlightedId);
+          .classed("highlighted", isHighlighted);
 
         g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
@@ -141,6 +142,7 @@
 
         addExpandIcon(-10, -22, d.data.husband, -70, 0);
 
+        // Wife block
         g.append("rect")
           .attr("x", -5)
           .attr("y", -20)
@@ -148,7 +150,7 @@
           .attr("height", 40)
           .attr("fill", "#ffe6f0")
           .attr("stroke", "#333")
-          .classed("highlighted", d.data.wife.id === highlightedId);
+          .classed("highlighted", isHighlighted);
 
         g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
