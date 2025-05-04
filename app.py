@@ -177,16 +177,16 @@ def load_family_tree_from_db(root_id="P1"):
         if not node or node.get("id") in seen:
             return None
         seen.add(node["id"])
-        if node.get("type") == "couple":
-            return {
-                **node,
-                "children": [
-                child_subtree for child in node.get("children", [])
-                if (child_subtree := build_subtree(child, seen))
-            ]
-            }
         st.write(f"🌳 Rendering node: {node.get('name', node.get('id'))}")
-        return node
+        children = []
+        for child in node.get("children", []):
+            child_subtree = build_subtree(child, seen)
+            if child_subtree:
+                children.append(child_subtree)
+        new_node = dict(node)
+        if children:
+            new_node["children"] = children
+        return new_node
 
     tree = build_subtree(tree_root, set())
     return tree
