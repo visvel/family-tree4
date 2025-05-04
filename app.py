@@ -82,22 +82,23 @@ def load_family_tree_from_db(root_id="P1"):
             }
 
             st.write(f"💍 Creating couple node for: {husband['name']} and {wife['name']}")
+            couple_node_id = f"{husband['id']}_couple"
             couple_node = {
-                "id": f"{husband['id']}_couple",
+                "id": couple_node_id,
                 "type": "couple",
                 "husband": husband,
                 "wife": wife,
                 "children": []
             }
-            nodes[couple_node["id"]] = couple_node
-            couple_links[husband["id"]] = couple_node["id"]
-            couple_links[wife["id"]] = couple_node["id"]
+            nodes[couple_node_id] = couple_node
+            couple_links[husband["id"]] = couple_node_id
+            couple_links[wife["id"]] = couple_node_id
 
             visited.add(husband["id"])
             visited.add(wife["id"])
 
             for child_id in children_ids:
-                if child_id not in visited:
+                if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
 
         else:
@@ -116,7 +117,7 @@ def load_family_tree_from_db(root_id="P1"):
         # Parents
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
-        if father_id and father_id not in visited:
+        if father_id and father_id not in visited and father_id not in queue:
             st.write(f"👨‍👩‍👧 Creating parent couple for: {father_id} and {mother_id}")
             parent_data = fetch_person_record(father_id)
             mother_data = fetch_person_record(mother_id) if mother_id else None
@@ -139,16 +140,18 @@ def load_family_tree_from_db(root_id="P1"):
                     "url": f"https://abc.com?id={mother_id}" if mother_data else "",
                     "gender": mother_data.get("gender", "F") if mother_data else "F"
                 }
+                parent_couple_id = f"{father_id}_couple"
                 parent_couple = {
-                    "id": f"{father_id}_couple",
+                    "id": parent_couple_id,
                     "type": "couple",
                     "husband": father,
                     "wife": mother,
                     "children": [nodes.get(couple_links.get(pid, pid)) for pid in [pid] if pid in visited]
                 }
-                nodes[parent_couple["id"]] = parent_couple
-                couple_links[father_id] = parent_couple["id"]
-                couple_links[mother_id] = parent_couple["id"]
+                st.write(f"🧩 Created parent couple node: {parent_couple_id}")
+                nodes[parent_couple_id] = parent_couple
+                couple_links[father_id] = parent_couple_id
+                couple_links[mother_id] = parent_couple_id
                 queue.append(father_id)
 
     st.write(f"✅ Total nodes created: {len(nodes)}")
