@@ -92,6 +92,7 @@ def load_family_tree_from_db(root_id="P1"):
                         }
                         st.write(f"👶 Adding child {child_node['name']} to couple {couple_node['id']}")
                         couple_node["children"].append(child_node)
+                st.write(f"🧩 Node created: {couple_node['id']}")
                 nodes[couple_node["id"]] = couple_node
                 continue  # skip adding person directly if they form a couple
 
@@ -113,108 +114,8 @@ def load_family_tree_from_db(root_id="P1"):
                     }
                     st.write(f"👶 Adding child {child_node['name']} to {person['id']}")
                     person["children"].append(child_node)
-        st.write(f"🧩 Node created: {person['name']}")
+        st.write(f"🧩 Node created: {person['id']} ({person['name']})")
         nodes[person["id"]] = person
 
     conn.close()
     return nodes.get(root_id) or list(nodes.values())[0]
-
-# HTML + JS for D3 Tree Rendering
-def get_d3_tree_html(tree_data):
-    return f"""
-    <div id='tree'></div>
-    <style>
-        .node rect {{ stroke: #333; stroke-width: 1.5px; }}
-        .node text {{ font: 12px sans-serif; pointer-events: none; }}
-        .link {{ fill: none; stroke: #ccc; stroke-width: 1.5px; }}
-    </style>
-    <script src=\"https://d3js.org/d3.v7.min.js\"></script>
-    <script>
-        const treeData = JSON.parse(`{json.dumps(tree_data)}`);
-        console.log("📦 Rendering treeData:", treeData);
-
-        const width = 1000, height = 600;
-        const svg = d3.select("#tree")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .append("g")
-            .attr("transform", "translate(50,50)");
-
-        const treeLayout = d3.tree().size([width - 100, height - 100]);
-        const root = d3.hierarchy(treeData, function(d) {{ return d.children; }});
-        treeLayout(root);
-
-        svg.selectAll('path.link')
-            .data(root.links())
-            .enter()
-            .append('path')
-            .attr('class', 'link')
-            .attr('d', d3.linkVertical()
-                .x(function(d) {{ return d.x; }})
-                .y(function(d) {{ return d.y; }}));
-
-        const node = svg.selectAll('g.node')
-            .data(root.descendants())
-            .enter()
-            .append('g')
-            .attr('class', 'node')
-            .attr('transform', function(d) {{ return 'translate(' + d.x + ',' + d.y + ')'; }});
-
-        node.each(function(d) {{
-            const g = d3.select(this);
-            if (d.data.type === 'couple') {{
-                console.log("👫 Rendering couple:", d.data.husband.name, "+", d.data.wife.name);
-                g.append('rect')
-                    .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
-                    .style('fill', '#d0e1f9');
-                g.append('text')
-                    .attr('x', 0).attr('y', -30)
-                    .attr('text-anchor', 'middle')
-                    .text(d.data.husband.name);
-
-                g.append('rect')
-                    .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
-                    .style('fill', '#f9d0f0');
-                g.append('text')
-                    .attr('x', 0).attr('y', 0)
-                    .attr('text-anchor', 'middle')
-                    .text(d.data.wife.name);
-            }} else {{
-                g.append('rect')
-                    .attr('width', 140)
-                    .attr('height', 60)
-                    .attr('x', -70)
-                    .attr('y', -30)
-                    .style('fill', '#f9f9f9')
-                    .style('stroke', '#333');
-
-                g.append('a')
-                    .attr('xlink:href', function(d) {{ return d.data.url; }})
-                    .append('text')
-                    .attr('text-anchor', 'middle')
-                    .attr('dy', '-0.5em')
-                    .text(function(d) {{ return d.data.name; }});
-
-                g.append('text')
-                    .attr('text-anchor', 'middle')
-                    .attr('dy', '1.2em')
-                    .text(function(d) {{ return (d.data.dob || '') + ' ' + (d.data.valavu || ''); }});
-            }}
-        }});
-    </script>
-    """
-
-# Streamlit UI
-st.set_page_config(layout="wide")
-st.title("Interactive Family Tree")
-
-params = st.query_params
-query_id = params.get("id", ["P1"])[0]
-tree_data = load_family_tree_from_db(query_id)
-
-if tree_data:
-    d3_html = get_d3_tree_html(tree_data)
-    st.components.v1.html(d3_html, height=700, scrolling=True)
-else:
-    st.warning("No data found for the given ID.")
