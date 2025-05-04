@@ -18,8 +18,15 @@ def load_family_tree_from_db(root_id="P1"):
         except:
             return str(raw_id).strip()
 
+    visited = set()
+
     def get_person(pid):
         pid = normalize_id(pid)
+        if pid in visited:
+            st.warning(f"🔁 Skipping already visited person: {pid} to avoid cycles")
+            return None
+        visited.add(pid)
+
         st.write(f"🔍 Fetching person: {pid}")
         cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
         row = cursor.fetchone()
