@@ -52,39 +52,85 @@
         .attr('class', 'node')
         .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    node.append('rect')
-        .attr('x', -70)
-        .attr('y', -20)
-        .attr('width', 140)
-        .attr('height', 40)
-        .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
-        .attr('stroke', '#333');
-
     node.each(function(d) {
       const g = d3.select(this);
-      if (d.data.url) {
-        const link = g.append("a")
-            .attr("xlink:href", d.data.url)
-            .attr("target", "_blank");
 
-        link.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "-0.3em")
-            .text(d.data.name || d.data.id)
-            .style("fill", "blue")
-            .style("text-decoration", "underline")
-            .style("cursor", "pointer");
+      if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
+        // Husband node
+        g.append('rect')
+          .attr('x', -70)
+          .attr('y', -35)
+          .attr('width', 140)
+          .attr('height', 30)
+          .attr('fill', '#e6f0ff')
+          .attr('stroke', '#333');
+
+        const husbandLink = g.append("a")
+          .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
+          .attr("target", "_blank");
+
+        husbandLink.append("text")
+          .attr("text-anchor", "middle")
+          .attr("dy", "-1em")
+          .text(d.data.husband.name || d.data.husband.id)
+          .style("fill", "blue")
+          .style("text-decoration", "underline")
+          .style("cursor", "pointer");
+
+        // Wife node
+        g.append('rect')
+          .attr('x', -70)
+          .attr('y', 0)
+          .attr('width', 140)
+          .attr('height', 30)
+          .attr('fill', '#ffe6f0')
+          .attr('stroke', '#333');
+
+        const wifeLink = g.append("a")
+          .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
+          .attr("target", "_blank");
+
+        wifeLink.append("text")
+          .attr("text-anchor", "middle")
+          .attr("dy", "1em")
+          .text(d.data.wife.name || d.data.wife.id)
+          .style("fill", "blue")
+          .style("text-decoration", "underline")
+          .style("cursor", "pointer");
+
       } else {
-        g.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "-0.3em")
-            .text(d.data.name || d.data.id);
-      }
+        g.append('rect')
+          .attr('x', -70)
+          .attr('y', -20)
+          .attr('width', 140)
+          .attr('height', 40)
+          .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
+          .attr('stroke', '#333');
 
-      g.append("text")
-        .attr("text-anchor", "middle")
-        .attr("dy", "1em")
-        .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+        if (d.data.url) {
+          const link = g.append("a")
+              .attr("xlink:href", d.data.url)
+              .attr("target", "_blank");
+
+          link.append("text")
+              .attr("text-anchor", "middle")
+              .attr("dy", "-0.3em")
+              .text(d.data.name || d.data.id)
+              .style("fill", "blue")
+              .style("text-decoration", "underline")
+              .style("cursor", "pointer");
+        } else {
+          g.append("text")
+              .attr("text-anchor", "middle")
+              .attr("dy", "-0.3em")
+              .text(d.data.name || d.data.id);
+        }
+
+        g.append("text")
+          .attr("text-anchor", "middle")
+          .attr("dy", "1em")
+          .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+      }
     });
   </script>
 </body>
