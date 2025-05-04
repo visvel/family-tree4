@@ -8,7 +8,7 @@ DEBUG = False
 MAX_NODES = 50
 
 def normalize_id(raw_id):
-    return str(raw_id).strip()
+    return str(raw_id).strip().lower()
 
 def load_family_tree_from_db(root_id="1"):
     if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
@@ -17,7 +17,7 @@ def load_family_tree_from_db(root_id="1"):
 
     def fetch_person_record(pid):
         if DEBUG: st.write(f"\U0001F50E Querying DB for person: {pid}")
-        cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
+        cursor.execute("SELECT * FROM people WHERE LOWER(id) = ?", (pid.lower(),))
         row = cursor.fetchone()
         if not row:
             if DEBUG: st.warning(f"⚠️ Person not found: {pid}")
