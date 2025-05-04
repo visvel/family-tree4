@@ -7,7 +7,7 @@ from collections import deque
 DEBUG = False
 
 def load_family_tree_from_db(root_id="1"):
-    if DEBUG: st.write("📥 Starting family tree loading...")
+    if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
@@ -18,7 +18,7 @@ def load_family_tree_from_db(root_id="1"):
             return str(raw_id).strip()
 
     def fetch_person_record(pid):
-        if DEBUG: st.write(f"🔎 Querying DB for person: {pid}")
+        if DEBUG: st.write(f"\U0001F50E Querying DB for person: {pid}")
         cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
         row = cursor.fetchone()
         if not row:
@@ -36,11 +36,11 @@ def load_family_tree_from_db(root_id="1"):
     queue.append(root_id)
 
     while queue:
-        if DEBUG: st.write(f"📬 Queue: {[x for x in queue]}")
+        if DEBUG: st.write(f"\U0001F4EC Queue: {[x for x in queue]}")
         pid = normalize_id(queue.popleft())
 
         if pid in visited:
-            if DEBUG: st.write(f"🔁 Skipping already visited person: {pid}")
+            if DEBUG: st.write(f"\U0001F501 Skipping already visited person: {pid}")
             continue
 
         data = fetch_person_record(pid)
@@ -76,7 +76,7 @@ def load_family_tree_from_db(root_id="1"):
                 "gender": spouse_data.get("gender", "F")
             }
 
-            if DEBUG: st.write(f"💍 Creating couple node for: {husband['name']} and {wife['name']}")
+            if DEBUG: st.write(f"\U0001F48D Creating couple node for: {husband['name']} and {wife['name']}")
             couple_node_id = f"{husband['id']}_couple"
             couple_node = {
                 "id": couple_node_id,
@@ -98,7 +98,7 @@ def load_family_tree_from_db(root_id="1"):
                 couple_node["children"].append({"id": child_id})
 
         else:
-            if DEBUG: st.write(f"👤 Creating individual node for: {data['name']}")
+            if DEBUG: st.write(f"\U0001F464 Creating individual node for: {data['name']}")
             person_node = {
                 "id": normalize_id(data["id"]),
                 "name": data["name"],
@@ -111,11 +111,10 @@ def load_family_tree_from_db(root_id="1"):
             visited.add(person_node["id"])
             nodes[person_node["id"]] = person_node
 
-        # Parents
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
         if father_id and father_id not in visited and father_id not in queue:
-            if DEBUG: st.write(f"👨‍👩‍👧 Creating parent couple for: {father_id} and {mother_id}")
+            if DEBUG: st.write(f"\U0001F468‍\U0001F469‍\U0001F467 Creating parent couple for: {father_id} and {mother_id}")
             parent_data = fetch_person_record(father_id)
             mother_data = fetch_person_record(mother_id) if mother_id else None
             if parent_data:
@@ -147,13 +146,12 @@ def load_family_tree_from_db(root_id="1"):
                     "wife": mother,
                     "children": [child_node] if child_node else []
                 }
-                if DEBUG: st.write(f"🧩 Created parent couple node: {parent_couple_id}")
+                if DEBUG: st.write(f"\U0001F9E9 Created parent couple node: {parent_couple_id}")
                 nodes[parent_couple_id] = parent_couple
                 couple_links[father_id] = parent_couple_id
                 couple_links[mother_id] = parent_couple_id
                 queue.append(father_id)
 
-    # Resolve child references
     for node in nodes.values():
         if node.get("type") == "couple":
             resolved_children = []
@@ -170,7 +168,6 @@ def load_family_tree_from_db(root_id="1"):
     if DEBUG: st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
 
-    # Re-root to highest ancestor
     tree_root_id = couple_links.get(root_id, root_id)
     current_root_id = tree_root_id
     while True:
@@ -188,7 +185,7 @@ def load_family_tree_from_db(root_id="1"):
             break
 
     tree_root = nodes.get(current_root_id)
-    if DEBUG: st.write(f"🔼 Re-rooting to ancestor couple: {current_root_id}")
+    if DEBUG: st.write(f"\U0001F53C Re-rooting to ancestor couple: {current_root_id}")
 
     def build_subtree(node, seen):
         if not node or node.get("id") in seen:
@@ -222,6 +219,6 @@ tree_data = load_family_tree_from_db(query_id)
 if tree_data:
     with open("public/tree.html", "r") as f:
         html = f.read().replace("__TREE_DATA__", json.dumps(tree_data))
-    st.components.v1.html(html, height=800, scrolling=True)
+    st.components.v1.html(html, height=1000, scrolling=True)
 else:
     st.warning("⚠️ No data found or failed to generate tree.")
