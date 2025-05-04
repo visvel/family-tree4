@@ -3,7 +3,7 @@ import sqlite3
 import json
 from collections import deque
 
-DEBUG = False
+DEBUG = True
 
 MAX_NODES = 50
 
