@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Family Tree</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
@@ -9,89 +9,83 @@
       stroke: #333;
       stroke-width: 1.5px;
     }
-    .node text {
-      font: 12px sans-serif;
+    .male {
+      fill: lightblue;
+    }
+    .female {
+      fill: pink;
     }
     .link {
       fill: none;
-      stroke: #ccc;
-      stroke-width: 1.5px;
+      stroke: #aaa;
+      stroke-width: 2px;
+    }
+    text {
+      font-family: sans-serif;
+      font-size: 12px;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div id="tree"></div>
   <script>
-    const treeData = JSON.parse(`__TREE_DATA__`);
-    console.log("🌳 Rendering Tree:", treeData);
+    const data = __TREE_DATA__;
 
-    const width = 1200;
-    const height = 800;
-
+    const width = 1600, height = 1000;
     const svg = d3.select("#tree")
       .append("svg")
       .attr("width", width)
       .attr("height", height)
       .append("g")
-      .attr("transform", "translate(50,50)");
+      .attr("transform", "translate(80,80)");
 
-    const treeLayout = d3.tree().size([width - 100, height - 100]);
-    const root = d3.hierarchy(treeData, d => d.children);
+    const treeLayout = d3.tree().nodeSize([160, 150]);
+    const root = d3.hierarchy(data);
     treeLayout(root);
 
-    svg.selectAll('path.link')
+    // Draw links
+    svg.selectAll('.link')
       .data(root.links())
       .enter()
       .append('path')
       .attr('class', 'link')
       .attr('d', d3.linkVertical()
         .x(d => d.x)
-        .y(d => d.y));
+        .y(d => d.y)
+      );
 
-    const node = svg.selectAll('g.node')
+    // Draw nodes
+    const node = svg.selectAll(".node")
       .data(root.descendants())
       .enter()
-      .append('g')
-      .attr('class', 'node')
-      .attr('transform', d => `translate(${d.x},${d.y})`);
+      .append("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x},${d.y})`);
 
+    // Couple node rendering
     node.each(function(d) {
       const g = d3.select(this);
-      if (d.data.type === 'couple') {
-        g.append('rect')
-          .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
-          .style('fill', '#cce5ff');
-        g.append('text')
-          .attr('x', 0).attr('y', -30)
-          .attr('text-anchor', 'middle')
-          .text(d.data.husband.name);
+      if (d.data.type === "couple") {
+        // Husband rectangle (top)
+        g.append("rect")
+          .attr("x", -60).attr("y", -40).attr("width", 120).attr("height", 30)
+          .attr("class", "male");
+        g.append("a").attr("xlink:href", d.data.husband.url).append("text")
+          .attr("y", -20).attr("text-anchor", "middle").text(d.data.husband.name);
 
-        g.append('rect')
-          .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
-          .style('fill', '#ffcce5');
-        g.append('text')
-          .attr('x', 0).attr('y', 0)
-          .attr('text-anchor', 'middle')
-          .text(d.data.wife.name);
+        // Wife rectangle (bottom)
+        g.append("rect")
+          .attr("x", -60).attr("y", -5).attr("width", 120).attr("height", 30)
+          .attr("class", "female");
+        g.append("a").attr("xlink:href", d.data.wife.url).append("text")
+          .attr("y", 15).attr("text-anchor", "middle").text(d.data.wife.name);
       } else {
-        g.append('rect')
-          .attr('x', -70).attr('y', -30).attr('width', 140).attr('height', 60)
-          .style('fill', '#fff')
-          .style('stroke', '#000');
-
-        g.append('a')
-          .attr('xlink:href', d.data.url)
-          .append('text')
-          .attr('x', 0)
-          .attr('y', -10)
-          .attr('text-anchor', 'middle')
-          .text(d.data.name);
-
-        g.append('text')
-          .attr('x', 0)
-          .attr('y', 10)
-          .attr('text-anchor', 'middle')
-          .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+        g.append("rect")
+          .attr("x", -60).attr("y", -20).attr("width", 120).attr("height", 40)
+          .attr("class", d.data.gender === "F" ? "female" : "male");
+        g.append("a").attr("xlink:href", d.data.url).append("text")
+          .attr("y", 0).attr("text-anchor", "middle").text(d.data.name);
       }
     });
   </script>
