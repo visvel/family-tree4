@@ -42,8 +42,8 @@
     const highlightedId = queryParams.get("id");
 
     const margin = { top: 20, right: 90, bottom: 30, left: 90 },
-          width = 1200 - margin.left - margin.right,
-          height = 800 - margin.top - margin.bottom;
+          width = 1400 - margin.left - margin.right,
+          height = 1000 - margin.top - margin.bottom;
 
     const svg = d3.select("#tree-container").append("svg")
       .attr("width", width + margin.left + margin.right)
@@ -52,7 +52,7 @@
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const root = d3.hierarchy(treeData);
-    const treeLayout = d3.tree().size([width, height]);
+    const treeLayout = d3.tree().nodeSize([200, 120]);  // ← spacing X=200, Y=120
     treeLayout(root);
 
     svg.selectAll(".link")
@@ -107,10 +107,8 @@
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        const isRed = d.data.husband.id === highlightedId || d.data.wife.id === highlightedId;
-
         g.append("rect")
-          .attr("x", -75)
+          .attr("x", -70)
           .attr("y", -20)
           .attr("width", 70)
           .attr("height", 40)
@@ -122,7 +120,7 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", -40)
+          .attr("x", -35)
           .attr("y", 0)
           .attr("text-anchor", "middle")
           .text(d.data.husband.name)
@@ -130,10 +128,10 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(-10, -22, d.data.husband, -75, 0);
+        addExpandIcon(-10, -22, d.data.husband, -70, 0);
 
         g.append("rect")
-          .attr("x", 5)
+          .attr("x", 0)  // ← no gap now
           .attr("y", -20)
           .attr("width", 70)
           .attr("height", 40)
@@ -145,7 +143,7 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", 40)
+          .attr("x", 35)
           .attr("y", 0)
           .attr("text-anchor", "middle")
           .text(d.data.wife.name)
@@ -153,7 +151,7 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(70, -22, d.data.wife, 5, 0);
+        addExpandIcon(60, -22, d.data.wife, 0, 0);
 
       } else {
         g.append("rect")
