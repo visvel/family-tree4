@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Family Tree</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     .node rect {
-      stroke: #333;
+      stroke: #555;
       stroke-width: 1.5px;
     }
     .node text {
@@ -18,81 +17,74 @@
       stroke-width: 1.5px;
     }
   </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-  <div id="tree"></div>
-  <script>
-    const treeData = JSON.parse(`__TREE_DATA__`);
-    console.log("🌳 Rendering Tree:", treeData);
+  <div id="tree-container"></div>
+  <script type="text/javascript">
+    const treeData = __TREE_DATA__;
 
-    const width = 1200;
-    const height = 800;
+    const margin = {top: 20, right: 90, bottom: 30, left: 90},
+          width = 1200 - margin.left - margin.right,
+          height = 800 - margin.top - margin.bottom;
 
-    const svg = d3.select("#tree")
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height)
+    const svg = d3.select("#tree-container").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
       .append("g")
-      .attr("transform", "translate(50,50)");
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const treeLayout = d3.tree().size([width - 100, height - 100]);
-    const root = d3.hierarchy(treeData, d => d.children);
+    const root = d3.hierarchy(treeData);
+    const treeLayout = d3.tree().size([width, height]);
     treeLayout(root);
 
-    svg.selectAll('path.link')
-      .data(root.links())
-      .enter()
-      .append('path')
-      .attr('class', 'link')
-      .attr('d', d3.linkVertical()
-        .x(d => d.x)
-        .y(d => d.y));
+    svg.selectAll('.link')
+        .data(root.links())
+        .enter().append('path')
+        .attr('class', 'link')
+        .attr('d', d3.linkVertical()
+            .x(d => d.x)
+            .y(d => d.y));
 
-    const node = svg.selectAll('g.node')
-      .data(root.descendants())
-      .enter()
-      .append('g')
-      .attr('class', 'node')
-      .attr('transform', d => `translate(${d.x},${d.y})`);
+    const node = svg.selectAll('.node')
+        .data(root.descendants())
+        .enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+
+    node.append('rect')
+        .attr('x', -70)
+        .attr('y', -20)
+        .attr('width', 140)
+        .attr('height', 40)
+        .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
+        .attr('stroke', '#333');
 
     node.each(function(d) {
       const g = d3.select(this);
-      if (d.data.type === 'couple') {
-        g.append('rect')
-          .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
-          .style('fill', '#cce5ff');
-        g.append('text')
-          .attr('x', 0).attr('y', -30)
-          .attr('text-anchor', 'middle')
-          .text(d.data.husband.name);
+      if (d.data.url) {
+        const link = g.append("a")
+            .attr("xlink:href", d.data.url)
+            .attr("target", "_blank");
 
-        g.append('rect')
-          .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
-          .style('fill', '#ffcce5');
-        g.append('text')
-          .attr('x', 0).attr('y', 0)
-          .attr('text-anchor', 'middle')
-          .text(d.data.wife.name);
+        link.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id)
+            .style("fill", "blue")
+            .style("text-decoration", "underline")
+            .style("cursor", "pointer");
       } else {
-        g.append('rect')
-          .attr('x', -70).attr('y', -30).attr('width', 140).attr('height', 60)
-          .style('fill', '#fff')
-          .style('stroke', '#000');
-
-        g.append('a')
-          .attr('xlink:href', d.data.url)
-          .append('text')
-          .attr('x', 0)
-          .attr('y', -10)
-          .attr('text-anchor', 'middle')
-          .text(d.data.name);
-
-        g.append('text')
-          .attr('x', 0)
-          .attr('y', 10)
-          .attr('text-anchor', 'middle')
-          .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+        g.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id);
       }
+
+      g.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "1em")
+        .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
     });
   </script>
 </body>
