@@ -195,6 +195,12 @@ def load_family_tree_from_db(root_id="P1"):
             if child_subtree:
                 children.append(child_subtree)
         new_node = dict(node)
+        if node.get("type") == "couple":
+            husband_name = node.get("husband", {}).get("name", "")
+            wife_name = node.get("wife", {}).get("name", "")
+            new_node["name"] = f"{husband_name} + {wife_name}"
+        else:
+            new_node["name"] = node.get("name", node.get("id"))
         if children:
             new_node["children"] = children
         return new_node
