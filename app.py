@@ -128,7 +128,7 @@ def load_family_tree_from_db(root_id="P1"):
 
 # Inject HTML from external file
 def get_html():
-    with open("static/tree.html") as f:
+    with open("public/tree.html") as f:
         return f.read()
 
 # Streamlit app
@@ -142,7 +142,7 @@ st.write(f"📌 Selected Root ID: {query_id}")
 tree_data = load_family_tree_from_db(query_id)
 
 if tree_data:
-    with open("static/tree.html", "r") as f:
+    with open("public/tree.html", "r") as f:
         html = f.read().replace("__TREE_DATA__", json.dumps(tree_data))
     st.components.v1.html(html, height=700, scrolling=True)
 else:
