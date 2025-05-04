@@ -43,7 +43,7 @@ def load_family_tree_from_db(root_id="1"):
             continue
 
         if DEBUG: st.write(f"🔗 Spouse IDs: {spouse_ids} | Children IDs: {children_ids}")
-data = fetch_person_record(pid)
+        data = fetch_person_record(pid)
         if not data:
             continue
 
