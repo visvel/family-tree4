@@ -46,7 +46,7 @@ def load_family_tree_from_db(root_id="1"):
         if not data:
             continue
 
-        spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
+        spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_ids", "")).split(";") if sid.strip() and sid.lower() != "nan"]
         children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
 
         if DEBUG: st.write(f"🔗 Parsed Spouse IDs: {spouse_ids} | Children IDs: {children_ids}")
