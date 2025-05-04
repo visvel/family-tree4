@@ -10,6 +10,7 @@ except ModuleNotFoundError as e:
 
 # Load data from SQLite
 def load_family_tree_from_db(root_id="P1"):
+    st.write("📥 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
@@ -20,6 +21,7 @@ def load_family_tree_from_db(root_id="P1"):
             return str(raw_id).strip()
 
     def fetch_person_record(pid):
+        st.write(f"🔎 Querying DB for person: {pid}")
         cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
         row = cursor.fetchone()
         if not row:
@@ -33,6 +35,7 @@ def load_family_tree_from_db(root_id="P1"):
     queue = deque([normalize_id(root_id)])
 
     while queue:
+        st.write(f"📬 Queue: {[x for x in queue]}")
         pid = queue.popleft()
         pid = normalize_id(pid)
         if pid in visited:
@@ -56,6 +59,8 @@ def load_family_tree_from_db(root_id="P1"):
 
         spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip()]
         children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip()]
+
+        st.write(f"👫 Spouse IDs: {spouse_ids} | 👶 Children IDs: {children_ids}")
 
         if spouse_ids:
             spouse_id = spouse_ids[0]  # Support one spouse for now
@@ -94,7 +99,7 @@ def load_family_tree_from_db(root_id="P1"):
                         couple_node["children"].append(child_node)
                 st.write(f"🧩 Node created: {couple_node['id']}")
                 nodes[couple_node["id"]] = couple_node
-                continue  # skip adding person directly if they form a couple
+                continue
 
         for cid in children_ids:
             if cid not in visited:
@@ -117,5 +122,6 @@ def load_family_tree_from_db(root_id="P1"):
         st.write(f"🧩 Node created: {person['id']} ({person['name']})")
         nodes[person["id"]] = person
 
+    st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
     return nodes.get(root_id) or list(nodes.values())[0]
