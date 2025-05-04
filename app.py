@@ -31,27 +31,30 @@ def load_family_tree_from_db(root_id="P1"):
             "url": f"https://abc.com?id={data['id']}"
         }
 
-        spouse_id = data.get("spouse_id")
-        if spouse_id:
-            spouse = get_person(spouse_id)
-            if spouse:
-                st.write(f"💍 {data['name']} is married to {spouse['name']}")
-                couple_node = {
-                    "id": f"{data['id']}_couple",
-                    "type": "couple",
-                    "husband": person if data.get("gender") == "M" else spouse,
-                    "wife": spouse if data.get("gender") == "M" else person,
-                    "children": []
-                }
-                # Children are assigned to couple node
-                children_str = data.get("children_ids", "")
-                for cid in children_str.split(";"):
-                    cid = cid.strip()
-                    if cid:
-                        child = get_person(cid)
-                        if child:
-                            couple_node["children"].append(child)
-                return couple_node
+        spouse_ids_str = data.get("spouse_id", "")
+        spouse_ids = [sid.strip() for sid in spouse_ids_str.split(";") if sid.strip()]
+
+        if spouse_ids:
+            for spouse_id in spouse_ids:
+                spouse = get_person(spouse_id)
+                if spouse:
+                    st.write(f"💍 {data['name']} is married to {spouse['name']}")
+                    couple_node = {
+                        "id": f"{data['id']}_couple",
+                        "type": "couple",
+                        "husband": person if data.get("gender") == "M" else spouse,
+                        "wife": spouse if data.get("gender") == "M" else person,
+                        "children": []
+                    }
+                    # Children are assigned to couple node
+                    children_str = data.get("children_ids", "")
+                    for cid in children_str.split(";"):
+                        cid = cid.strip()
+                        if cid:
+                            child = get_person(cid)
+                            if child:
+                                couple_node["children"].append(child)
+                    return couple_node
 
         children_str = data.get("children_ids", "")
         children = []
