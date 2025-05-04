@@ -41,30 +41,22 @@
     const queryParams = new URLSearchParams(window.location.search);
     const highlightedId = queryParams.get("id");
 
-    const margin = { top: 40, right: 100, bottom: 30, left: 300 };
-    const width = 1600 - margin.left - margin.right;
-    const height = 1000 - margin.top - margin.bottom;
+    const margin = { top: 20, right: 90, bottom: 30, left: 200 },
+          width = 1400 - margin.left - margin.right,
+          height = 1000 - margin.top - margin.bottom;
 
     const svg = d3.select("#tree-container").append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .append("g")
+    .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const root = d3.hierarchy(treeData);
-    const treeLayout = d3.tree().nodeSize([160, 120]);
+    const treeLayout = d3.tree().nodeSize([200, 150]);
     treeLayout(root);
 
-    // Center the tree horizontally
-    const nodes = root.descendants();
-    const links = root.links();
-    const minX = d3.min(nodes, d => d.x);
-    const maxX = d3.max(nodes, d => d.x);
-
-    svg.attr("transform", `translate(${margin.left - minX + 50},${margin.top})`);
-
     svg.selectAll(".link")
-      .data(links)
+      .data(root.links())
       .enter().append("path")
       .attr("class", "link")
       .attr("d", d3.linkVertical()
@@ -72,7 +64,7 @@
         .y(d => d.y));
 
     const node = svg.selectAll(".node")
-      .data(nodes)
+      .data(root.descendants())
       .enter().append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x},${d.y})`);
@@ -116,9 +108,9 @@
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
         g.append("rect")
-          .attr("x", -75)
+          .attr("x", -70)
           .attr("y", -20)
-          .attr("width", 70)
+          .attr("width", 65)
           .attr("height", 40)
           .attr("fill", "#e6f0ff")
           .attr("stroke", "#333")
@@ -128,7 +120,7 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", -40)
+          .attr("x", -38)
           .attr("y", 0)
           .attr("text-anchor", "middle")
           .text(d.data.husband.name)
@@ -136,12 +128,12 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(-10, -22, d.data.husband, -75, 0);
+        addExpandIcon(-10, -22, d.data.husband, -70, 0);
 
         g.append("rect")
           .attr("x", -5)
           .attr("y", -20)
-          .attr("width", 70)
+          .attr("width", 65)
           .attr("height", 40)
           .attr("fill", "#ffe6f0")
           .attr("stroke", "#333")
@@ -151,7 +143,7 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", 30)
+          .attr("x", 28)
           .attr("y", 0)
           .attr("text-anchor", "middle")
           .text(d.data.wife.name)
@@ -159,7 +151,7 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(60, -22, d.data.wife, -5, 0);
+        addExpandIcon(55, -22, d.data.wife, -5, 0);
 
       } else {
         g.append("rect")
