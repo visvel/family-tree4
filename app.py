@@ -3,7 +3,7 @@ import sqlite3
 import json
 from collections import deque
 
-DEBUG = True
+DEBUG = False
 
 MAX_NODES = 50
 
@@ -11,12 +11,12 @@ def normalize_id(raw_id):
     return str(raw_id).strip().lower()
 
 def load_family_tree_from_db(root_id="1"):
-    if DEBUG: st.write("📥 Starting family tree loading...")
+    if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
     def fetch_person_record(pid):
-        if DEBUG: st.write(f"🔍 Querying DB for person: {pid}")
+        if DEBUG: st.write(f"\U0001F50E Querying DB for person: {pid}")
         cursor.execute("SELECT * FROM people WHERE LOWER(id) = ?", (pid.lower(),))
         row = cursor.fetchone()
         if not row:
@@ -42,7 +42,8 @@ def load_family_tree_from_db(root_id="1"):
         if pid in visited:
             continue
 
-        data = fetch_person_record(pid)
+        if DEBUG: st.write(f"🔗 Spouse IDs: {spouse_ids} | Children IDs: {children_ids}")
+data = fetch_person_record(pid)
         if not data:
             continue
 
@@ -75,7 +76,7 @@ def load_family_tree_from_db(root_id="1"):
 
             couple_node_id = f"{husband['id']}_couple"
             if DEBUG: st.write(f"👫 Creating couple node: {husband['name']} + {wife['name']}")
-            couple_node = {
+couple_node = {
                 "id": couple_node_id,
                 "type": "couple",
                 "husband": husband,
@@ -93,7 +94,7 @@ def load_family_tree_from_db(root_id="1"):
                 if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
                 if DEBUG: st.write(f"👶 Adding child link: {child_id} to couple {couple_node_id}")
-                couple_node["children"].append({"id": child_id})
+couple_node["children"].append({"id": child_id})
 
         else:
             person_node = {
@@ -106,7 +107,7 @@ def load_family_tree_from_db(root_id="1"):
             }
             visited.add(person_node["id"])
             if DEBUG: st.write(f"👤 Creating individual node: {person_node['name']} [{person_node['id']}]")
-            nodes[person_node["id"]] = person_node
+nodes[person_node["id"]] = person_node
 
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
@@ -134,8 +135,8 @@ def load_family_tree_from_db(root_id="1"):
                 child_ref_id = couple_links.get(pid, pid)
                 child_node = nodes.get(child_ref_id)
                 if DEBUG: st.write(f"👨‍👩‍👧 Creating parent couple node: {father['name']} + {mother['name'] if mother_data else 'Unknown'}")
-                parent_couple = {
-                    "id": parent_couple_id,
+parent_couple = {
+                "id": parent_couple_id,
                     "type": "couple",
                     "husband": father,
                     "wife": mother,
