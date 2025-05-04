@@ -11,12 +11,12 @@ def normalize_id(raw_id):
     return str(raw_id).strip().lower()
 
 def load_family_tree_from_db(root_id="1"):
-    if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
+    if DEBUG: st.write("📥 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
     def fetch_person_record(pid):
-        if DEBUG: st.write(f"\U0001F50E Querying DB for person: {pid}")
+        if DEBUG: st.write(f"🔍 Querying DB for person: {pid}")
         cursor.execute("SELECT * FROM people WHERE LOWER(id) = ?", (pid.lower(),))
         row = cursor.fetchone()
         if not row:
@@ -74,6 +74,7 @@ def load_family_tree_from_db(root_id="1"):
             }
 
             couple_node_id = f"{husband['id']}_couple"
+            if DEBUG: st.write(f"👫 Creating couple node: {husband['name']} + {wife['name']}")
             couple_node = {
                 "id": couple_node_id,
                 "type": "couple",
@@ -91,6 +92,7 @@ def load_family_tree_from_db(root_id="1"):
             for child_id in children_ids:
                 if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
+                if DEBUG: st.write(f"👶 Adding child link: {child_id} to couple {couple_node_id}")
                 couple_node["children"].append({"id": child_id})
 
         else:
@@ -103,6 +105,7 @@ def load_family_tree_from_db(root_id="1"):
                 "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}"
             }
             visited.add(person_node["id"])
+            if DEBUG: st.write(f"👤 Creating individual node: {person_node['name']} [{person_node['id']}]")
             nodes[person_node["id"]] = person_node
 
         father_id = normalize_id(data.get("father_id", ""))
@@ -130,6 +133,7 @@ def load_family_tree_from_db(root_id="1"):
                 parent_couple_id = f"{father_id}_couple"
                 child_ref_id = couple_links.get(pid, pid)
                 child_node = nodes.get(child_ref_id)
+                if DEBUG: st.write(f"👨‍👩‍👧 Creating parent couple node: {father['name']} + {mother['name'] if mother_data else 'Unknown'}")
                 parent_couple = {
                     "id": parent_couple_id,
                     "type": "couple",
@@ -149,6 +153,7 @@ def load_family_tree_from_db(root_id="1"):
                 cid = child_stub.get("id")
                 full = nodes.get(couple_links.get(cid, cid))
                 if full:
+                    if DEBUG: st.write(f"🔗 Resolved child link: {cid} to node {full['id']}")
                     resolved_children.append(full)
             node["children"] = resolved_children
 
