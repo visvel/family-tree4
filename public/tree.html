@@ -1,175 +1,152 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Family Tree</title>
-  <style>
-    .node rect {
-      stroke: #555;
-      stroke-width: 1.5px;
-    }
-    .node text {
-      font: 12px sans-serif;
-    }
-    .link {
-      fill: none;
-      stroke: #ccc;
-      stroke-width: 1.5px;
-    }
-    .expand-icon {
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .detail-box {
-      font-size: 11px;
-      fill: #333;
-    }
-  </style>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-</head>
-<body>
-  <div id="tree-container"></div>
-  <script type="text/javascript">
-    const treeData = __TREE_DATA__;
+<script type="text/javascript">
+  const treeData = JSON.parse(__TREE_DATA__);  // ✅ FIXED injection
 
-    const margin = {top: 20, right: 90, bottom: 30, left: 90},
-          width = 1200 - margin.left - margin.right,
-          height = 800 - margin.top - margin.bottom;
+  const margin = {top: 20, right: 90, bottom: 30, left: 90},
+        width = 1200 - margin.left - margin.right,
+        height = 800 - margin.top - margin.bottom;
 
-    const svg = d3.select("#tree-container").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+  const svg = d3.select("#tree-container").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const root = d3.hierarchy(treeData);
-    const treeLayout = d3.tree().size([width, height]);
-    treeLayout(root);
+  const root = d3.hierarchy(treeData);
+  const treeLayout = d3.tree().size([width, height]);
+  treeLayout(root);
 
-    svg.selectAll('.link')
-        .data(root.links())
-        .enter().append('path')
-        .attr('class', 'link')
-        .attr('d', d3.linkVertical()
-            .x(d => d.x)
-            .y(d => d.y));
+  svg.selectAll('.link')
+      .data(root.links())
+      .enter().append('path')
+      .attr('class', 'link')
+      .attr('d', d3.linkVertical()
+          .x(d => d.x)
+          .y(d => d.y));
 
-    const node = svg.selectAll('.node')
-        .data(root.descendants())
-        .enter().append('g')
-        .attr('class', 'node')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
+  const node = svg.selectAll('.node')
+      .data(root.descendants())
+      .enter().append('g')
+      .attr('class', 'node')
+      .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    const expandedState = {};
+  node.each(function(d) {
+    const g = d3.select(this);
 
-    node.each(function(d) {
-      const g = d3.select(this);
-
-      function addExpandIcon(x, y, personData, targetId) {
-        g.append("text")
-          .attr("class", "expand-icon")
-          .attr("x", x)
-          .attr("y", y)
-          .text("V")
-          .on("click", () => {
-            const current = expandedState[targetId];
-            expandedState[targetId] = !current;
-
-            const detail = g.select(`.detail-${targetId}`);
-            if (expandedState[targetId]) {
-              if (detail.empty()) {
-                g.append("text")
-                  .attr("class", `detail-box detail-${targetId}`)
-                  .attr("x", -65)
-                  .attr("y", 45)
-                  .text(`DOB: ${personData.dob || 'N/A'}, Valavu: ${personData.valavu || 'N/A'}, Alive: ${personData.is_alive ? 'Yes' : 'No''} `);
-              } else {
-                detail.style("display", null);
-              }
-            } else {
-              detail.style("display", "none");
-            }
-          });
+    function toggleDetails(expanded, detailsGroup, personData) {
+      detailsGroup.selectAll("*").remove();
+      if (expanded) {
+        const details = [
+          `DOB: ${personData.dob || 'N/A'}`,
+          `Valavu: ${personData.valavu || 'N/A'}`,
+          `Alive: ${personData.is_alive ? 'Yes' : 'No'}`
+        ];
+        details.forEach((line, i) => {
+          detailsGroup.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", `${2.2 + i}em`)
+            .text(line)
+            .style("font-size", "11px");
+        });
       }
+    }
 
-      if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        // Husband
-        g.append('rect')
-          .attr('x', -70)
-          .attr('y', -35)
-          .attr('width', 140)
-          .attr('height', 30)
-          .attr('fill', '#e6f0ff')
-          .attr('stroke', '#333');
+    function addExpandIcon(x, y, personData, detailsGroup) {
+      let expanded = false;
+      g.append("text")
+        .attr("class", "expand-icon")
+        .attr("x", x)
+        .attr("y", y)
+        .text("\u25BC")  // ▼ triangle
+        .on("click", () => {
+          expanded = !expanded;
+          toggleDetails(expanded, detailsGroup, personData);
+        });
+    }
 
-        g.append("a")
-          .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
-          .attr("target", "_blank")
-          .append("text")
-          .attr("text-anchor", "middle")
-          .attr("dy", "-1em")
-          .text(d.data.husband.name || d.data.husband.id)
-          .style("fill", "blue")
-          .style("text-decoration", "underline")
-          .style("cursor", "pointer");
+    if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
+      // Husband
+      g.append('rect')
+        .attr('x', -70)
+        .attr('y', -35)
+        .attr('width', 140)
+        .attr('height', 30)
+        .attr('fill', '#e6f0ff')
+        .attr('stroke', '#333');
 
-        addExpandIcon(55, -38, d.data.husband, d.data.husband.id);
+      const husbandLink = g.append("a")
+        .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
+        .attr("target", "_blank");
 
-        // Wife
-        g.append('rect')
-          .attr('x', -70)
-          .attr('y', 0)
-          .attr('width', 140)
-          .attr('height', 30)
-          .attr('fill', '#ffe6f0')
-          .attr('stroke', '#333');
+      husbandLink.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "-1em")
+        .text(d.data.husband.name || d.data.husband.id)
+        .style("fill", "blue")
+        .style("text-decoration", "underline")
+        .style("cursor", "pointer");
 
-        g.append("a")
-          .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
-          .attr("target", "_blank")
-          .append("text")
-          .attr("text-anchor", "middle")
-          .attr("dy", "1em")
-          .text(d.data.wife.name || d.data.wife.id)
-          .style("fill", "blue")
-          .style("text-decoration", "underline")
-          .style("cursor", "pointer");
+      const husbandDetails = g.append("g");
+      addExpandIcon(55, -38, d.data.husband, husbandDetails);
 
-        addExpandIcon(55, 2, d.data.wife, d.data.wife.id);
+      // Wife
+      g.append('rect')
+        .attr('x', -70)
+        .attr('y', 0)
+        .attr('width', 140)
+        .attr('height', 30)
+        .attr('fill', '#ffe6f0')
+        .attr('stroke', '#333');
 
+      const wifeLink = g.append("a")
+        .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
+        .attr("target", "_blank");
+
+      wifeLink.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "1em")
+        .text(d.data.wife.name || d.data.wife.id)
+        .style("fill", "blue")
+        .style("text-decoration", "underline")
+        .style("cursor", "pointer");
+
+      const wifeDetails = g.append("g");
+      addExpandIcon(55, 2, d.data.wife, wifeDetails);
+
+    } else {
+      g.append('rect')
+        .attr('x', -70)
+        .attr('y', -20)
+        .attr('width', 140)
+        .attr('height', 40)
+        .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
+        .attr('stroke', '#333');
+
+      if (d.data.url) {
+        const link = g.append("a")
+            .attr("xlink:href", d.data.url)
+            .attr("target", "_blank");
+
+        link.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id)
+            .style("fill", "blue")
+            .style("text-decoration", "underline")
+            .style("cursor", "pointer");
       } else {
-        g.append('rect')
-          .attr('x', -70)
-          .attr('y', -20)
-          .attr('width', 140)
-          .attr('height', 40)
-          .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
-          .attr('stroke', '#333');
-
-        const targetId = d.data.id;
-
-        if (d.data.url) {
-          g.append("a")
-              .attr("xlink:href", d.data.url)
-              .attr("target", "_blank")
-              .append("text")
-              .attr("text-anchor", "middle")
-              .attr("dy", "-0.3em")
-              .text(d.data.name || d.data.id)
-              .style("fill", "blue")
-              .style("text-decoration", "underline")
-              .style("cursor", "pointer");
-        } else {
-          g.append("text")
-              .attr("text-anchor", "middle")
-              .attr("dy", "-0.3em")
-              .text(d.data.name || d.data.id);
-        }
-
-        addExpandIcon(55, -22, d.data, targetId);
+        g.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id);
       }
-    });
-  </script>
-</body>
-</html>
+
+      const staticDetails = g.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "1em")
+        .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+
+      const expandDetails = g.append("g");
+      addExpandIcon(55, -22, d.data, expandDetails);
+    }
+  });
+</script>
