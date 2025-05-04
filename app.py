@@ -6,6 +6,8 @@ from collections import deque
 # Debug toggle
 DEBUG = False
 
+MAX_NODES = 50
+
 def load_family_tree_from_db(root_id="1"):
     if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
@@ -36,6 +38,10 @@ def load_family_tree_from_db(root_id="1"):
     queue.append(root_id)
 
     while queue:
+        if len(nodes) >= MAX_NODES:
+            if DEBUG: st.warning(f"🚨 Node limit of {MAX_NODES} reached. Stopping further expansion.")
+            break
+
         if DEBUG: st.write(f"\U0001F4EC Queue: {[x for x in queue]}")
         pid = normalize_id(queue.popleft())
 
