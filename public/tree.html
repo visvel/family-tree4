@@ -55,7 +55,6 @@
     const treeLayout = d3.tree().nodeSize([200, 150]);
     treeLayout(root);
 
-    // Shift entire layout to center horizontally
     let minX = Infinity, maxX = -Infinity;
     root.descendants().forEach(d => {
       if (d.x < minX) minX = d.x;
@@ -83,7 +82,7 @@
     node.each(function (d) {
       const g = d3.select(this);
       const isHighlighted = d.data.id === highlightedId ||
-            (d.data.type === "couple" && (d.data.husband?.id === highlightedId || d.data.wife?.id === highlightedId));
+        (d.data.type === "couple" && (d.data.husband?.id === highlightedId || d.data.wife?.id === highlightedId));
 
       function toggleDetails(nodeGroup, personData, xOffset, yOffset) {
         const existing = nodeGroup.selectAll(".details").filter((_, i, nodes) => {
@@ -119,10 +118,15 @@
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
         // Husband block
+        const hName = d.data.husband.name;
+        const wName = d.data.wife.name;
+        const hWidth = (hName.length + 2) * 7.5;
+        const wWidth = (wName.length + 2) * 7.5;
+
         g.append("rect")
-          .attr("x", -70)
+          .attr("x", -hWidth)
           .attr("y", -20)
-          .attr("width", 65)
+          .attr("width", hWidth)
           .attr("height", 40)
           .attr("fill", "#add8e6")
           .attr("stroke", "#333")
@@ -132,21 +136,20 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", -38)
+          .attr("x", -hWidth / 2)
           .attr("y", 0)
           .attr("text-anchor", "middle")
-          .text(d.data.husband.name)
+          .text(hName)
           .style("fill", "blue")
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(-10, -22, d.data.husband, -70, 0);
+        addExpandIcon(-hWidth + 5, -22, d.data.husband, -hWidth, 0);
 
-        // Wife block
         g.append("rect")
-          .attr("x", -5)
+          .attr("x", 5)
           .attr("y", -20)
-          .attr("width", 65)
+          .attr("width", wWidth)
           .attr("height", 40)
           .attr("fill", "#ffc0cb")
           .attr("stroke", "#333")
@@ -156,25 +159,30 @@
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
           .attr("target", "_blank")
           .append("text")
-          .attr("x", 28)
+          .attr("x", 5 + wWidth / 2)
           .attr("y", 0)
           .attr("text-anchor", "middle")
-          .text(d.data.wife.name)
+          .text(wName)
           .style("fill", "blue")
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(55, -22, d.data.wife, -5, 0);
+        addExpandIcon(5 + wWidth - 15, -22, d.data.wife, 5, 0);
 
       } else {
-        // Individual node — no gender field, use fallback coloring if desired
-        const fillColor = "#fff";  // Default white
+        const name = d.data.name || d.data.id;
+        const textLength = name.length;
+        const paddingChars = 2;
+        const charWidth = 7.5;
+        const rectWidth = (textLength + paddingChars) * charWidth;
+        const rectX = -rectWidth / 2;
+
         g.append("rect")
-          .attr("x", -70)
+          .attr("x", rectX)
           .attr("y", -20)
-          .attr("width", 140)
+          .attr("width", rectWidth)
           .attr("height", 40)
-          .attr("fill", fillColor)
+          .attr("fill", "#fff")
           .attr("stroke", "#333")
           .classed("highlighted", isHighlighted);
 
@@ -183,20 +191,22 @@
             .attr("xlink:href", d.data.url)
             .attr("target", "_blank")
             .append("text")
+            .attr("x", 0)
+            .attr("y", 0)
             .attr("text-anchor", "middle")
-            .attr("dy", "-0.3em")
-            .text(d.data.name || d.data.id)
+            .text(name)
             .style("fill", "blue")
             .style("text-decoration", "underline")
             .style("cursor", "pointer");
         } else {
           g.append("text")
+            .attr("x", 0)
+            .attr("y", 0)
             .attr("text-anchor", "middle")
-            .attr("dy", "-0.3em")
-            .text(d.data.name || d.data.id);
+            .text(name);
         }
 
-        addExpandIcon(55, -22, d.data, -65, 0);
+        addExpandIcon(rectX + rectWidth - 15, -22, d.data, rectX, 0);
       }
     });
   </script>
