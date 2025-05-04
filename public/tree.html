@@ -16,6 +16,11 @@
       stroke: #ccc;
       stroke-width: 1.5px;
     }
+    .expand-icon {
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
   </style>
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -55,8 +60,20 @@
     node.each(function(d) {
       const g = d3.select(this);
 
+      function addExpandIcon(x, y, personData) {
+        g.append("text")
+          .attr("class", "expand-icon")
+          .attr("x", x)
+          .attr("y", y)
+          .text("\u25BC")  // down-pointing triangle
+          .on("click", () => {
+            let details = `\nDOB: ${personData.dob || 'N/A'}\nValavu: ${personData.valavu || 'N/A'}\nAlive: ${personData.is_alive ? 'Yes' : 'No'}`;
+            alert(personData.name + details);
+          });
+      }
+
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        // Husband node
+        // Husband
         g.append('rect')
           .attr('x', -70)
           .attr('y', -35)
@@ -77,7 +94,9 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        // Wife node
+        addExpandIcon(55, -38, d.data.husband);
+
+        // Wife
         g.append('rect')
           .attr('x', -70)
           .attr('y', 0)
@@ -97,6 +116,8 @@
           .style("fill", "blue")
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
+
+        addExpandIcon(55, 2, d.data.wife);
 
       } else {
         g.append('rect')
@@ -130,6 +151,8 @@
           .attr("text-anchor", "middle")
           .attr("dy", "1em")
           .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+
+        addExpandIcon(55, -22, d.data);
       }
     });
   </script>
