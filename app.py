@@ -67,7 +67,7 @@ def load_family_tree_from_db(root_id="P1"):
                 "dob": data["dob"],
                 "valavu": data["valavu"],
                 "is_alive": data["alive"] == "Yes",
-                "url": f"https://abc.com?id={normalize_id(data['id'])}",
+                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}",
                 "gender": data.get("gender", "M")
             }
 
@@ -77,7 +77,7 @@ def load_family_tree_from_db(root_id="P1"):
                 "dob": spouse_data["dob"],
                 "valavu": spouse_data["valavu"],
                 "is_alive": spouse_data["alive"] == "Yes",
-                "url": f"https://abc.com?id={normalize_id(spouse_data['id'])}",
+                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(spouse_data['id'])}",
                 "gender": spouse_data.get("gender", "F")
             }
 
@@ -110,7 +110,7 @@ def load_family_tree_from_db(root_id="P1"):
                 "dob": data["dob"],
                 "valavu": data["valavu"],
                 "is_alive": data["alive"] == "Yes",
-                "url": f"https://abc.com?id={normalize_id(data['id'])}"
+                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}"
             }
             visited.add(person_node["id"])
             nodes[person_node["id"]] = person_node
@@ -128,7 +128,7 @@ def load_family_tree_from_db(root_id="P1"):
                     "dob": parent_data["dob"],
                     "valavu": parent_data["valavu"],
                     "is_alive": parent_data["alive"] == "Yes",
-                    "url": f"https://abc.com?id={father_id}",
+                    "url": f"https://500-family-tree4.streamlit.app/?id={father_id}",
                     "gender": parent_data.get("gender", "M")
                 }
                 mother = {
@@ -137,7 +137,7 @@ def load_family_tree_from_db(root_id="P1"):
                     "dob": mother_data["dob"] if mother_data else "",
                     "valavu": mother_data["valavu"] if mother_data else "",
                     "is_alive": mother_data["alive"] == "Yes" if mother_data else False,
-                    "url": f"https://abc.com?id={mother_id}" if mother_data else "",
+                    "url": f"https://500-family-tree4.streamlit.app/?id={mother_id}" if mother_data else "",
                     "gender": mother_data.get("gender", "F") if mother_data else "F"
                 }
                 parent_couple_id = f"{father_id}_couple"
