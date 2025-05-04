@@ -21,13 +21,21 @@
       font-weight: bold;
       font-size: 16px;
     }
+    .highlighted {
+      stroke: #00ff00;
+      stroke-width: 3px;
+      fill: #e0ffe0;
+    }
   </style>
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
   <div id="tree-container"></div>
   <script type="text/javascript">
-    const treeData = JSON.parse(__TREE_DATA__);  // Injected as double-encoded JSON string
+    const treeData = JSON.parse(__TREE_DATA__);
+    const debug = false; // Change to true to enable debug logging
+    const queryParams = new URLSearchParams(window.location.search);
+    const highlightedId = queryParams.get("id");
 
     const margin = {top: 20, right: 90, bottom: 30, left: 90},
           width = 1200 - margin.left - margin.right,
@@ -59,40 +67,22 @@
 
     node.each(function(d) {
       const g = d3.select(this);
+      const isHighlighted = d.data.id === highlightedId;
+      if (debug) console.log("Rendering node:", d.data);
 
-      function toggleDetails(expanded, detailsGroup, personData) {
-        detailsGroup.selectAll("*").remove();
-        if (expanded) {
-          const details = [
-            `DOB: ${personData.dob || 'N/A'}`,
-            `Valavu: ${personData.valavu || 'N/A'}`,
-            `Alive: ${personData.is_alive ? 'Yes' : 'No'}`
-          ];
-          details.forEach((line, i) => {
-            detailsGroup.append("text")
-              .attr("text-anchor", "middle")
-              .attr("dy", `${2.2 + i}em`)
-              .text(line)
-              .style("font-size", "11px");
-          });
-        }
-      }
-
-      function addExpandIcon(x, y, personData, detailsGroup) {
-        let expanded = false;
+      function addExpandIcon(x, y, personData) {
         g.append("text")
           .attr("class", "expand-icon")
           .attr("x", x)
           .attr("y", y)
-          .text("\u25BC")  // ▼ triangle
+          .text("\u25BC")
           .on("click", () => {
-            expanded = !expanded;
-            toggleDetails(expanded, detailsGroup, personData);
+            let details = `\nDOB: ${personData.dob || 'N/A'}\nValavu: ${personData.valavu || 'N/A'}\nAlive: ${personData.is_alive ? 'Yes' : 'No'}`;
+            alert(personData.name + details);
           });
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        // Husband
         g.append('rect')
           .attr('x', -70)
           .attr('y', -35)
@@ -113,10 +103,8 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        const husbandDetails = g.append("g");
-        addExpandIcon(55, -38, d.data.husband, husbandDetails);
+        addExpandIcon(55, -38, d.data.husband);
 
-        // Wife
         g.append('rect')
           .attr('x', -70)
           .attr('y', 0)
@@ -137,8 +125,11 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        const wifeDetails = g.append("g");
-        addExpandIcon(55, 2, d.data.wife, wifeDetails);
+        addExpandIcon(55, 2, d.data.wife);
+
+        if (isHighlighted || d.data.husband.id === highlightedId || d.data.wife.id === highlightedId) {
+          g.selectAll("rect").classed("highlighted", true);
+        }
 
       } else {
         g.append('rect')
@@ -147,7 +138,8 @@
           .attr('width', 140)
           .attr('height', 40)
           .attr('fill', d => d.data.gender === 'F' ? '#ffe6f0' : d.data.gender === 'M' ? '#e6f0ff' : '#fff')
-          .attr('stroke', '#333');
+          .attr('stroke', '#333')
+          .classed("highlighted", isHighlighted);
 
         if (d.data.url) {
           const link = g.append("a")
@@ -168,13 +160,12 @@
               .text(d.data.name || d.data.id);
         }
 
-        const staticDetails = g.append("text")
+        g.append("text")
           .attr("text-anchor", "middle")
           .attr("dy", "1em")
           .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
 
-        const expandDetails = g.append("g");
-        addExpandIcon(55, -22, d.data, expandDetails);
+        addExpandIcon(55, -22, d.data);
       }
     });
   </script>
