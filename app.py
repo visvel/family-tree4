@@ -168,23 +168,24 @@ def load_family_tree_from_db(root_id="P1"):
 
     st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
+
     root_key = couple_links.get(root_id, root_id)
-tree_root = nodes.get(root_key)
+    tree_root = nodes.get(root_key)
 
-# Filter to only include nodes directly reachable from the root
-def build_subtree(node, seen):
-    if not node or node.get("id") in seen:
-        return None
-    seen.add(node["id"])
-    if node.get("type") == "couple":
-        return {
-            **node,
-            "children": [build_subtree(child, seen) for child in node.get("children", []) if build_subtree(child, seen)]
-        }
-    return node
+    # Filter to only include nodes directly reachable from the root
+    def build_subtree(node, seen):
+        if not node or node.get("id") in seen:
+            return None
+        seen.add(node["id"])
+        if node.get("type") == "couple":
+            return {
+                **node,
+                "children": [build_subtree(child, seen) for child in node.get("children", []) if build_subtree(child, seen)]
+            }
+        return node
 
-tree = build_subtree(tree_root, set())
-return tree
+    tree = build_subtree(tree_root, set())
+    return tree
 
 # Inject HTML from external file
 def get_html():
