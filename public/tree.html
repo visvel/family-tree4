@@ -26,14 +26,18 @@
       stroke-width: 3px;
       fill: #e0ffe0;
     }
+    .details {
+      font-size: 10px;
+      fill: #333;
+    }
   </style>
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
   <div id="tree-container"></div>
   <script type="text/javascript">
-    const treeData = JSON.parse(__TREE_DATA__);
-    const debug = false; // Change to true to enable debug logging
+    const treeData = JSON.parse(JSON.parse(__TREE_DATA__));
+    const debug = false; // Enable for debug logs
     const queryParams = new URLSearchParams(window.location.search);
     const highlightedId = queryParams.get("id");
 
@@ -70,16 +74,38 @@
       const isHighlighted = d.data.id === highlightedId;
       if (debug) console.log("Rendering node:", d.data);
 
-      function addExpandIcon(x, y, personData) {
+      function toggleDetails(nodeGroup, personData, yOffset) {
+        const existing = nodeGroup.selectAll(".details");
+        if (!existing.empty()) {
+          existing.remove();
+        } else {
+          nodeGroup.append("text")
+            .attr("class", "details")
+            .attr("x", -65)
+            .attr("y", yOffset + 40)
+            .text(`DOB: ${personData.dob || 'N/A'}`);
+
+          nodeGroup.append("text")
+            .attr("class", "details")
+            .attr("x", -65)
+            .attr("y", yOffset + 52)
+            .text(`Valavu: ${personData.valavu || 'N/A'}`);
+
+          nodeGroup.append("text")
+            .attr("class", "details")
+            .attr("x", -65)
+            .attr("y", yOffset + 64)
+            .text(`Alive: ${personData.is_alive ? 'Yes' : 'No'}`);
+        }
+      }
+
+      function addExpandIcon(x, y, personData, yOffset) {
         g.append("text")
           .attr("class", "expand-icon")
           .attr("x", x)
           .attr("y", y)
           .text("\u25BC")
-          .on("click", () => {
-            let details = `\nDOB: ${personData.dob || 'N/A'}\nValavu: ${personData.valavu || 'N/A'}\nAlive: ${personData.is_alive ? 'Yes' : 'No'}`;
-            alert(personData.name + details);
-          });
+          .on("click", () => toggleDetails(g, personData, yOffset));
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
@@ -103,7 +129,7 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(55, -38, d.data.husband);
+        addExpandIcon(55, -38, d.data.husband, -40);
 
         g.append('rect')
           .attr('x', -70)
@@ -125,7 +151,7 @@
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(55, 2, d.data.wife);
+        addExpandIcon(55, 2, d.data.wife, 0);
 
         if (isHighlighted || d.data.husband.id === highlightedId || d.data.wife.id === highlightedId) {
           g.selectAll("rect").classed("highlighted", true);
@@ -160,12 +186,7 @@
               .text(d.data.name || d.data.id);
         }
 
-        g.append("text")
-          .attr("text-anchor", "middle")
-          .attr("dy", "1em")
-          .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
-
-        addExpandIcon(55, -22, d.data);
+        addExpandIcon(55, -22, d.data, -20);
       }
     });
   </script>
