@@ -155,6 +155,17 @@ def load_family_tree_from_db(root_id="P1"):
                 couple_links[mother_id] = parent_couple_id
                 queue.append(father_id)
 
+    # ✅ Final pass: resolve full child nodes
+    for node in nodes.values():
+        if node.get("type") == "couple":
+            resolved_children = []
+            for child_stub in node.get("children", []):
+                cid = child_stub.get("id")
+                full = nodes.get(cid)
+                if full:
+                    resolved_children.append(full)
+            node["children"] = resolved_children
+
     st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
     return nodes.get(couple_links.get(root_id, root_id)) or list(nodes.values())[0]
