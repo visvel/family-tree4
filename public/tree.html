@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Family Tree</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .node rect {
+      stroke: #333;
+      stroke-width: 1.5px;
+    }
+    .node text {
+      font: 12px sans-serif;
+      pointer-events: none;
+    }
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 1.5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>✅ D3 will load below if JS is valid</h2>
+  <div id="tree"></div>
+  <script>
+    const treeData = JSON.parse(`__TREE_DATA__`);
+    console.log("📦 Rendering treeData:", treeData);
+
+    const width = 1000, height = 600;
+    const svg = d3.select("#tree")
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", "translate(50,50)");
+
+    const treeLayout = d3.tree().size([width - 100, height - 100]);
+    const root = d3.hierarchy(treeData, d => d.children);
+    treeLayout(root);
+
+    svg.selectAll('path.link')
+      .data(root.links())
+      .enter()
+      .append('path')
+      .attr('class', 'link')
+      .attr('d', d3.linkVertical()
+        .x(d => d.x)
+        .y(d => d.y));
+
+    const node = svg.selectAll('g.node')
+      .data(root.descendants())
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+
+    node.each(function(d) {
+      const g = d3.select(this);
+      if (d.data.type === 'couple') {
+        console.log("👫 Rendering couple:", d.data.husband.name, "+", d.data.wife.name);
+        g.append('rect')
+          .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
+          .style('fill', '#d0e1f9');
+        g.append('text')
+          .attr('x', 0).attr('y', -30)
+          .attr('text-anchor', 'middle')
+          .text(d.data.husband.name);
+
+        g.append('rect')
+          .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
+          .style('fill', '#f9d0f0');
+        g.append('text')
+          .attr('x', 0).attr('y', 0)
+          .attr('text-anchor', 'middle')
+          .text(d.data.wife.name);
+      } else {
+        g.append('rect')
+          .attr('width', 140)
+          .attr('height', 60)
+          .attr('x', -70)
+          .attr('y', -30)
+          .style('fill', '#f9f9f9')
+          .style('stroke', '#333');
+
+        g.append('a')
+          .attr('xlink:href', d.data.url)
+          .append('text')
+          .attr('text-anchor', 'middle')
+          .attr('dy', '-0.5em')
+          .text(d.data.name);
+
+        g.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('dy', '1.2em')
+          .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
+      }
+    });
+  </script>
+</body>
+</html>
