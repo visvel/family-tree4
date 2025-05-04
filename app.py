@@ -12,7 +12,14 @@ def load_family_tree_from_db(root_id="P1"):
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
+    def normalize_id(raw_id):
+        try:
+            return str(int(float(raw_id)))
+        except:
+            return str(raw_id).strip()
+
     def get_person(pid):
+        pid = normalize_id(pid)
         st.write(f"🔍 Fetching person: {pid}")
         cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
         row = cursor.fetchone()
@@ -23,16 +30,16 @@ def load_family_tree_from_db(root_id="P1"):
         columns = [desc[0] for desc in cursor.description]
         data = dict(zip(columns, row))
         person = {
-            "id": data["id"],
+            "id": normalize_id(data["id"]),
             "name": data["name"],
             "dob": data["dob"],
             "valavu": data["valavu"],
             "is_alive": data["alive"] == "Yes",
-            "url": f"https://abc.com?id={data['id']}"
+            "url": f"https://abc.com?id={normalize_id(data['id'])}"
         }
 
         spouse_ids_str = data.get("spouse_id", "")
-        spouse_ids = [sid.strip() for sid in spouse_ids_str.split(";") if sid.strip()]
+        spouse_ids = [normalize_id(sid) for sid in spouse_ids_str.split(";") if sid.strip()]
 
         if spouse_ids:
             for spouse_id in spouse_ids:
@@ -40,7 +47,7 @@ def load_family_tree_from_db(root_id="P1"):
                 if spouse:
                     st.write(f"💍 {data['name']} is married to {spouse['name']}")
                     couple_node = {
-                        "id": f"{data['id']}_couple",
+                        "id": f"{person['id']}_couple",
                         "type": "couple",
                         "husband": person if data.get("gender") == "M" else spouse,
                         "wife": spouse if data.get("gender") == "M" else person,
