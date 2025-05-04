@@ -13,9 +13,11 @@ def load_family_tree_from_db(root_id="P1"):
     cursor = conn.cursor()
 
     def get_person(pid):
+        st.write(f"🔍 Fetching person: {pid}")
         cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
         row = cursor.fetchone()
         if not row:
+            st.warning(f"⚠️ Person not found: {pid}")
             return None
 
         columns = [desc[0] for desc in cursor.description]
@@ -33,7 +35,23 @@ def load_family_tree_from_db(root_id="P1"):
         if spouse_id:
             spouse = get_person(spouse_id)
             if spouse:
-                person["spouse"] = spouse
+                st.write(f"💍 {data['name']} is married to {spouse['name']}")
+                couple_node = {
+                    "id": f"{data['id']}_couple",
+                    "type": "couple",
+                    "husband": person if data.get("gender") == "M" else spouse,
+                    "wife": spouse if data.get("gender") == "M" else person,
+                    "children": []
+                }
+                # Children are assigned to couple node
+                children_str = data.get("children_ids", "")
+                for cid in children_str.split(";"):
+                    cid = cid.strip()
+                    if cid:
+                        child = get_person(cid)
+                        if child:
+                            couple_node["children"].append(child)
+                return couple_node
 
         children_str = data.get("children_ids", "")
         children = []
@@ -57,13 +75,14 @@ def get_d3_tree_html(tree_data):
     return f"""
     <div id='tree'></div>
     <style>
-        .node rect {{ fill: #fff; stroke: #333; stroke-width: 1.5px; }}
+        .node rect {{ stroke: #333; stroke-width: 1.5px; }}
         .node text {{ font: 12px sans-serif; pointer-events: none; }}
         .link {{ fill: none; stroke: #ccc; stroke-width: 1.5px; }}
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         const treeData = {json.dumps(tree_data)};
+        console.log("📦 Rendering treeData:", treeData);
 
         const width = 1000, height = 600;
         const svg = d3.select("#tree")
@@ -93,25 +112,47 @@ def get_d3_tree_html(tree_data):
             .attr('class', 'node')
             .attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
 
-        node.append('rect')
-            .attr('width', 140)
-            .attr('height', 60)
-            .attr('x', -70)
-            .attr('y', -30)
-            .style('fill', '#f9f9f9')
-            .style('stroke', '#333');
+        node.each(function(d) {
+            const g = d3.select(this);
+            if (d.data.type === 'couple') {
+                console.log("👫 Rendering couple:", d.data.husband.name, "+", d.data.wife.name);
+                g.append('rect')
+                    .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
+                    .style('fill', '#d0e1f9');
+                g.append('text')
+                    .attr('x', 0).attr('y', -30)
+                    .attr('text-anchor', 'middle')
+                    .text(d.data.husband.name);
 
-        node.append('a')
-            .attr('xlink:href', d => d.data.url)
-            .append('text')
-            .attr('text-anchor', 'middle')
-            .attr('dy', '-0.5em')
-            .text(d => d.data.name);
+                g.append('rect')
+                    .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
+                    .style('fill', '#f9d0f0');
+                g.append('text')
+                    .attr('x', 0).attr('y', 0)
+                    .attr('text-anchor', 'middle')
+                    .text(d.data.wife.name);
+            } else {
+                g.append('rect')
+                    .attr('width', 140)
+                    .attr('height', 60)
+                    .attr('x', -70)
+                    .attr('y', -30)
+                    .style('fill', '#f9f9f9')
+                    .style('stroke', '#333');
 
-        node.append('text')
-            .attr('text-anchor', 'middle')
-            .attr('dy', '1.2em')
-            .text(d => (d.data.dob || '') + ' ' + (d.data.valavu || ''));
+                g.append('a')
+                    .attr('xlink:href', d => d.data.url)
+                    .append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '-0.5em')
+                    .text(d => d.data.name);
+
+                g.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '1.2em')
+                    .text(d => (d.data.dob || '') + ' ' + (d.data.valavu || ''));
+            }
+        });
     </script>
     """
 
