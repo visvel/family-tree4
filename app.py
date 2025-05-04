@@ -100,6 +100,7 @@ def load_family_tree_from_db(root_id="P1"):
             for child_id in children_ids:
                 if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
+                couple_node["children"].append({"id": child_id})
 
         else:
             st.write(f"👤 Creating individual node for: {data['name']}")
