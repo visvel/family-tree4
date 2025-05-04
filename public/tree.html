@@ -11,7 +11,6 @@
     }
     .node text {
       font: 12px sans-serif;
-      pointer-events: none;
     }
     .link {
       fill: none;
@@ -21,13 +20,14 @@
   </style>
 </head>
 <body>
-  <h2>✅ D3 will load below if JS is valid</h2>
   <div id="tree"></div>
   <script>
     const treeData = JSON.parse(`__TREE_DATA__`);
-    console.log("📦 Rendering treeData:", treeData);
+    console.log("🌳 Rendering Tree:", treeData);
 
-    const width = 1000, height = 600;
+    const width = 1200;
+    const height = 800;
+
     const svg = d3.select("#tree")
       .append("svg")
       .attr("width", width)
@@ -53,15 +53,14 @@
       .enter()
       .append('g')
       .attr('class', 'node')
-      .attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+      .attr('transform', d => `translate(${d.x},${d.y})`);
 
     node.each(function(d) {
       const g = d3.select(this);
       if (d.data.type === 'couple') {
-        console.log("👫 Rendering couple:", d.data.husband.name, "+", d.data.wife.name);
         g.append('rect')
           .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
-          .style('fill', '#d0e1f9');
+          .style('fill', '#cce5ff');
         g.append('text')
           .attr('x', 0).attr('y', -30)
           .attr('text-anchor', 'middle')
@@ -69,30 +68,29 @@
 
         g.append('rect')
           .attr('x', -70).attr('y', -20).attr('width', 140).attr('height', 30)
-          .style('fill', '#f9d0f0');
+          .style('fill', '#ffcce5');
         g.append('text')
           .attr('x', 0).attr('y', 0)
           .attr('text-anchor', 'middle')
           .text(d.data.wife.name);
       } else {
         g.append('rect')
-          .attr('width', 140)
-          .attr('height', 60)
-          .attr('x', -70)
-          .attr('y', -30)
-          .style('fill', '#f9f9f9')
-          .style('stroke', '#333');
+          .attr('x', -70).attr('y', -30).attr('width', 140).attr('height', 60)
+          .style('fill', '#fff')
+          .style('stroke', '#000');
 
         g.append('a')
           .attr('xlink:href', d.data.url)
           .append('text')
+          .attr('x', 0)
+          .attr('y', -10)
           .attr('text-anchor', 'middle')
-          .attr('dy', '-0.5em')
           .text(d.data.name);
 
         g.append('text')
+          .attr('x', 0)
+          .attr('y', 10)
           .attr('text-anchor', 'middle')
-          .attr('dy', '1.2em')
           .text((d.data.dob || '') + ' ' + (d.data.valavu || ''));
       }
     });
