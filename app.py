@@ -1,34 +1,37 @@
+# app.py
+
 import streamlit as st
 import sqlite3
 import json
 from collections import deque
 
-DEBUG_MODE = False
+DEBUG_MODE = False  # Toggle for logs
 
-def normalize_id(raw_id):
-    try:
-        return str(int(float(raw_id)))
-    except:
-        return str(raw_id).strip()
-
-def fetch_person(cursor, pid):
-    if DEBUG_MODE:
-        st.write(f"🔎 Querying DB for person: {pid}")
-    cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
-    row = cursor.fetchone()
-    if not row:
-        if DEBUG_MODE:
-            st.warning(f"⚠️ Person not found: {pid}")
-        return None
-    columns = [desc[0] for desc in cursor.description]
-    return dict(zip(columns, row))
-
-def load_family_tree_from_db(root_id):
+# Load family tree from SQLite DB
+def load_family_tree_from_db(root_id="1"):
+    if DEBUG_MODE: st.write("📥 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
 
-    visited = set()
+    def normalize_id(raw_id):
+        try:
+            return str(int(float(raw_id)))
+        except:
+            return str(raw_id).strip()
+
+    def fetch_person(pid):
+        pid = normalize_id(pid)
+        if DEBUG_MODE: st.write(f"🔎 Querying DB for person: {pid}")
+        cursor.execute("SELECT * FROM people WHERE id = ?", (pid,))
+        row = cursor.fetchone()
+        if not row:
+            if DEBUG_MODE: st.warning(f"⚠️ Person not found: {pid}")
+            return None
+        columns = [desc[0] for desc in cursor.description]
+        return dict(zip(columns, row))
+
     queue = deque()
+    visited = set()
     nodes = {}
     couple_links = {}
 
@@ -37,172 +40,176 @@ def load_family_tree_from_db(root_id):
 
     while queue:
         pid = normalize_id(queue.popleft())
+        if DEBUG_MODE: st.write(f"📬 Queue: {[pid]}")
+
         if pid in visited:
             continue
+        visited.add(pid)
 
-        data = fetch_person(cursor, pid)
-        if not data:
+        person = fetch_person(pid)
+        if not person:
             continue
 
-        spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
-        children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
+        spouse_ids = [normalize_id(sid) for sid in str(person.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
+        children_ids = [normalize_id(cid) for cid in str(person.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
 
         if spouse_ids:
             spouse_id = spouse_ids[0]
-            spouse_data = fetch_person(cursor, spouse_id)
-            if not spouse_data:
+            spouse = fetch_person(spouse_id)
+            if not spouse:
                 continue
 
-            husband = {
-                "id": normalize_id(data["id"]),
-                "name": data["name"],
-                "dob": data["dob"],
-                "valavu": data["valavu"],
-                "is_alive": data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}",
-                "gender": data.get("gender", "M")
-            }
+            husband, wife = (person, spouse) if person.get("gender", "M") == "M" else (spouse, person)
+            couple_id = f"{normalize_id(husband['id'])}_couple"
 
-            wife = {
-                "id": normalize_id(spouse_data["id"]),
-                "name": spouse_data["name"],
-                "dob": spouse_data["dob"],
-                "valavu": spouse_data["valavu"],
-                "is_alive": spouse_data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(spouse_data['id'])}",
-                "gender": spouse_data.get("gender", "F")
-            }
+            if DEBUG_MODE: st.write(f"💍 Creating couple node for: {husband['name']} and {wife['name']}")
 
-            if DEBUG_MODE:
-                st.write(f"💍 Creating couple node for: {husband['name']} and {wife['name']}")
-
-            cid = f"{husband['id']}_couple"
             couple_node = {
-                "id": cid,
+                "id": couple_id,
                 "type": "couple",
-                "husband": husband,
-                "wife": wife,
-                "children": [{"id": c} for c in children_ids]
+                "husband": {
+                    "id": normalize_id(husband["id"]),
+                    "name": husband["name"],
+                    "dob": husband["dob"],
+                    "valavu": husband["valavu"],
+                    "is_alive": husband["alive"] == "Yes",
+                    "gender": husband.get("gender", "M"),
+                    "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(husband['id'])}"
+                },
+                "wife": {
+                    "id": normalize_id(wife["id"]),
+                    "name": wife["name"],
+                    "dob": wife["dob"],
+                    "valavu": wife["valavu"],
+                    "is_alive": wife["alive"] == "Yes",
+                    "gender": wife.get("gender", "F"),
+                    "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(wife['id'])}"
+                },
+                "children": [{"id": cid} for cid in children_ids]
             }
-            nodes[cid] = couple_node
-            couple_links[husband["id"]] = cid
-            couple_links[wife["id"]] = cid
-            visited.update([husband["id"], wife["id"]])
 
-            for child_id in children_ids:
-                if child_id not in visited and child_id not in queue:
-                    queue.append(child_id)
+            nodes[couple_id] = couple_node
+            couple_links[normalize_id(husband["id"])] = couple_id
+            couple_links[normalize_id(wife["id"])] = couple_id
+
+            for cid in children_ids:
+                if cid not in visited:
+                    queue.append(cid)
+
         else:
-            person_node = {
-                "id": normalize_id(data["id"]),
-                "name": data["name"],
-                "dob": data["dob"],
-                "valavu": data["valavu"],
-                "is_alive": data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}",
-                "gender": data.get("gender", "")
+            if DEBUG_MODE: st.write(f"👤 Creating individual node for: {person['name']}")
+            node_id = normalize_id(person["id"])
+            nodes[node_id] = {
+                "id": node_id,
+                "name": person["name"],
+                "dob": person["dob"],
+                "valavu": person["valavu"],
+                "is_alive": person["alive"] == "Yes",
+                "gender": person.get("gender", ""),
+                "url": f"https://500-family-tree4.streamlit.app/?id={node_id}"
             }
-            nodes[person_node["id"]] = person_node
-            visited.add(person_node["id"])
 
-        # parents
-        father_id = normalize_id(data.get("father_id", ""))
-        mother_id = normalize_id(data.get("mother_id", ""))
-        if father_id and father_id not in visited and father_id not in queue:
-            father_data = fetch_person(cursor, father_id)
-            mother_data = fetch_person(cursor, mother_id) if mother_id else None
-            if father_data:
-                father = {
-                    "id": father_id,
-                    "name": father_data["name"],
-                    "dob": father_data["dob"],
-                    "valavu": father_data["valavu"],
-                    "is_alive": father_data["alive"] == "Yes",
-                    "url": f"https://500-family-tree4.streamlit.app/?id={father_id}",
-                    "gender": father_data.get("gender", "M")
-                }
-                mother = {
-                    "id": mother_id,
-                    "name": mother_data["name"] if mother_data else "",
-                    "dob": mother_data["dob"] if mother_data else "",
-                    "valavu": mother_data["valavu"] if mother_data else "",
-                    "is_alive": mother_data["alive"] == "Yes" if mother_data else False,
-                    "url": f"https://500-family-tree4.streamlit.app/?id={mother_id}" if mother_data else "",
-                    "gender": mother_data.get("gender", "F") if mother_data else "F"
-                }
-
+        father_id = normalize_id(person.get("father_id", ""))
+        mother_id = normalize_id(person.get("mother_id", ""))
+        if father_id and father_id not in visited:
+            father = fetch_person(father_id)
+            mother = fetch_person(mother_id) if mother_id else None
+            if father:
+                if DEBUG_MODE: st.write(f"👨‍👩‍👧 Creating parent couple for: {father_id} and {mother_id}")
+                parent_couple_id = f"{father_id}_couple"
                 child_ref = couple_links.get(pid, pid)
                 child_node = nodes.get(child_ref)
-                couple_id = f"{father_id}_couple"
                 parent_couple = {
-                    "id": couple_id,
+                    "id": parent_couple_id,
                     "type": "couple",
-                    "husband": father,
-                    "wife": mother,
+                    "husband": {
+                        "id": father_id,
+                        "name": father["name"],
+                        "dob": father["dob"],
+                        "valavu": father["valavu"],
+                        "is_alive": father["alive"] == "Yes",
+                        "gender": father.get("gender", "M"),
+                        "url": f"https://500-family-tree4.streamlit.app/?id={father_id}"
+                    },
+                    "wife": {
+                        "id": mother_id,
+                        "name": mother["name"] if mother else "",
+                        "dob": mother["dob"] if mother else "",
+                        "valavu": mother["valavu"] if mother else "",
+                        "is_alive": mother["alive"] == "Yes" if mother else False,
+                        "gender": mother.get("gender", "F") if mother else "F",
+                        "url": f"https://500-family-tree4.streamlit.app/?id={mother_id}" if mother else ""
+                    },
                     "children": [child_node] if child_node else []
                 }
-                nodes[couple_id] = parent_couple
-                couple_links[father_id] = couple_id
-                couple_links[mother_id] = couple_id
+                if DEBUG_MODE: st.write(f"🧩 Created parent couple node: {parent_couple_id}")
+                nodes[parent_couple_id] = parent_couple
+                couple_links[father_id] = parent_couple_id
+                couple_links[mother_id] = parent_couple_id
                 queue.append(father_id)
 
+    # Resolve children references
     for node in nodes.values():
         if node.get("type") == "couple":
-            resolved_children = []
-            for stub in node.get("children", []):
-                cid = stub.get("id")
-                full = nodes.get(couple_links.get(cid, cid))
-                if full:
-                    resolved_children.append(full)
-            node["children"] = resolved_children
+            resolved = []
+            for c in node.get("children", []):
+                resolved_child = nodes.get(couple_links.get(c["id"], c["id"]))
+                if resolved_child:
+                    if DEBUG_MODE: st.write(f"✅ Resolved child ID {c['id']} → {resolved_child['id']}")
+                    resolved.append(resolved_child)
+            node["children"] = resolved
 
-    root_ref = couple_links.get(root_id, root_id)
-    current_root = root_ref
+    conn.close()
+    if DEBUG_MODE: st.write(f"✅ Total nodes created: {len(nodes)}")
+
+    root_node_id = couple_links.get(root_id, root_id)
+    current = root_node_id
     while True:
         parent = None
-        for n in nodes.values():
-            if n.get("type") == "couple":
-                for c in n.get("children", []):
-                    if c.get("id") == current_root:
-                        current_root = n["id"]
-                        parent = n
-                        break
+        for node in nodes.values():
+            for c in node.get("children", []):
+                if c.get("id") == current:
+                    current = node["id"]
+                    parent = current
+                    break
             if parent:
                 break
         if not parent:
             break
-    root = nodes.get(current_root)
-    def build(node, seen):
+    root_node_id = current
+    tree_root = nodes.get(root_node_id)
+    if DEBUG_MODE: st.write(f"🔼 Re-rooting to ancestor couple: {root_node_id}")
+
+    def build_tree(node, seen):
         if not node or node["id"] in seen:
             return None
         seen.add(node["id"])
         children = []
         for c in node.get("children", []):
-            child = build(c, seen)
-            if child:
-                children.append(child)
-        out = dict(node)
-        out["children"] = children
-        return out
+            subtree = build_tree(c, seen)
+            if subtree:
+                children.append(subtree)
+        result = dict(node)
+        result["children"] = children
+        return result
 
-    return build(root, set())
+    return build_tree(tree_root, set())
 
-# --- Streamlit Frontend ---
+# Streamlit app logic
 st.set_page_config(layout="wide")
 st.title("Interactive Family Tree")
 
-query_id = st.query_params.get("id", "1")
-if isinstance(query_id, list):
-    query_id = query_id[0]
+params = st.query_params
+query_id = params.get("id", ["1"])
+if isinstance(query_id, list): query_id = query_id[0]
 query_id = str(query_id).strip()
-st.write(f"📌 Selected Root ID: {query_id}")
 
+st.write(f"📌 Selected Root ID: {query_id}")
 tree_data = load_family_tree_from_db(query_id)
 
 if tree_data:
     with open("public/tree.html", "r") as f:
-        raw_html = f.read()
-        html_filled = raw_html.replace("__TREE_DATA__", json.dumps(json.dumps(tree_data)))
-    st.components.v1.html(html_filled, height=800, scrolling=True)
+        html = f.read().replace("__TREE_DATA__", json.dumps(tree_data)).replace("__QUERY_ID__", json.dumps(query_id))
+    st.components.v1.html(html, height=1000, scrolling=True)
 else:
-    st.warning("⚠️ Tree data could not be generated.")
+    st.warning("⚠️ No tree found for given ID.")
