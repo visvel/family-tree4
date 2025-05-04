@@ -32,6 +32,7 @@ def load_family_tree_from_db(root_id="P1"):
 
     visited = set()
     nodes = {}
+    couple_links = {}
     queue = deque([normalize_id(root_id)])
 
     while queue:
@@ -57,8 +58,8 @@ def load_family_tree_from_db(root_id="P1"):
             "url": f"https://abc.com?id={normalize_id(data['id'])}"
         }
 
-        spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip()]
-        children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip()]
+        spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
+        children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
 
         st.write(f"👫 Spouse IDs: {spouse_ids} | 👶 Children IDs: {children_ids}")
 
@@ -75,52 +76,37 @@ def load_family_tree_from_db(root_id="P1"):
                     "url": f"https://abc.com?id={normalize_id(spouse_data['id'])}"
                 }
                 st.write(f"💍 {person['name']} is married to {spouse['name']}")
+                couple_id = f"{person['id']}_couple"
                 couple_node = {
-                    "id": f"{person['id']}_couple",
+                    "id": couple_id,
                     "type": "couple",
                     "husband": person if data.get("gender") == "M" else spouse,
                     "wife": spouse if data.get("gender") == "M" else person,
                     "children": []
                 }
+                nodes[couple_id] = couple_node
+                couple_links[person["id"]] = couple_id
+                couple_links[spouse["id"]] = couple_id
+
                 for cid in children_ids:
                     if cid not in visited:
                         queue.append(cid)
-                    child_data = fetch_person_record(cid)
-                    if child_data:
-                        child_id = normalize_id(child_data["id"])
-                        child_couple_id = f"{child_id}_couple"
-                        if child_couple_id in nodes:
-                            child_node = nodes[child_couple_id]
-                            st.write(f"🔁 Replacing {child_id} with couple node {child_couple_id}")
-                        else:
-                            child_node = {
-                                "id": child_id,
-                                "name": child_data["name"],
-                                "dob": child_data["dob"],
-                                "valavu": child_data["valavu"],
-                                "is_alive": child_data["alive"] == "Yes",
-                                "url": f"https://abc.com?id={child_id}"
-                            }
-                        st.write(f"👶 Adding child {child_node['name']} to couple {couple_node['id']}")
-                        couple_node["children"].append(child_node)
-                st.write(f"🧩 Node created: {couple_node['id']}")
-                nodes[couple_node["id"]] = couple_node
-                continue
 
-        for cid in children_ids:
-            if cid not in visited:
-                queue.append(cid)
         if children_ids:
             person["children"] = []
             for cid in children_ids:
-                child_data = fetch_person_record(cid)
-                if child_data:
-                    child_id = normalize_id(child_data["id"])
-                    child_couple_id = f"{child_id}_couple"
-                    if child_couple_id in nodes:
-                        child_node = nodes[child_couple_id]
-                        st.write(f"🔁 Replacing {child_id} with couple node {child_couple_id}")
-                    else:
+                if cid not in visited:
+                    queue.append(cid)
+
+        if person["id"] in couple_links:
+            # Attach children to couple
+            couple_node = nodes[couple_links[person["id"]]]
+            for cid in children_ids:
+                child_id = normalize_id(cid)
+                child_node = nodes.get(couple_links.get(child_id), None)
+                if not child_node:
+                    child_data = fetch_person_record(child_id)
+                    if child_data:
                         child_node = {
                             "id": child_id,
                             "name": child_data["name"],
@@ -129,10 +115,30 @@ def load_family_tree_from_db(root_id="P1"):
                             "is_alive": child_data["alive"] == "Yes",
                             "url": f"https://abc.com?id={child_id}"
                         }
-                    st.write(f"👶 Adding child {child_node['name']} to {person['id']}")
-                    person["children"].append(child_node)
-        st.write(f"🧩 Node created: {person['id']} ({person['name']})")
-        nodes[person["id"]] = person
+                if child_node:
+                    st.write(f"👶 Adding child {child_node['name']} to couple {couple_node['id']}")
+                    couple_node["children"].append(child_node)
+        else:
+            for cid in children_ids:
+                child_id = normalize_id(cid)
+                child_node = nodes.get(couple_links.get(child_id), None)
+                if not child_node:
+                    child_data = fetch_person_record(child_id)
+                    if child_data:
+                        child_node = {
+                            "id": child_id,
+                            "name": child_data["name"],
+                            "dob": child_data["dob"],
+                            "valavu": child_data["valavu"],
+                            "is_alive": child_data["alive"] == "Yes",
+                            "url": f"https://abc.com?id={child_id}"
+                        }
+                if child_node:
+                    person.setdefault("children", []).append(child_node)
+
+        if person["id"] not in couple_links:
+            st.write(f"🧩 Node created: {person['id']} ({person['name']})")
+            nodes[person["id"]] = person
 
     st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
