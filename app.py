@@ -42,13 +42,14 @@ def load_family_tree_from_db(root_id="1"):
         if pid in visited:
             continue
 
-        if DEBUG: st.write(f"🔗 Spouse IDs: {spouse_ids} | Children IDs: {children_ids}")
         data = fetch_person_record(pid)
         if not data:
             continue
 
         spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
         children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
+
+        if DEBUG: st.write(f"🔗 Parsed Spouse IDs: {spouse_ids} | Children IDs: {children_ids}")
 
         if spouse_ids:
             spouse_id = spouse_ids[0]
@@ -76,7 +77,7 @@ def load_family_tree_from_db(root_id="1"):
 
             couple_node_id = f"{husband['id']}_couple"
             if DEBUG: st.write(f"👫 Creating couple node: {husband['name']} + {wife['name']}")
-couple_node = {
+            couple_node = {
                 "id": couple_node_id,
                 "type": "couple",
                 "husband": husband,
@@ -94,7 +95,7 @@ couple_node = {
                 if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
                 if DEBUG: st.write(f"👶 Adding child link: {child_id} to couple {couple_node_id}")
-couple_node["children"].append({"id": child_id})
+                couple_node["children"].append({"id": child_id})
 
         else:
             person_node = {
@@ -107,7 +108,7 @@ couple_node["children"].append({"id": child_id})
             }
             visited.add(person_node["id"])
             if DEBUG: st.write(f"👤 Creating individual node: {person_node['name']} [{person_node['id']}]")
-nodes[person_node["id"]] = person_node
+            nodes[person_node["id"]] = person_node
 
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
@@ -135,8 +136,8 @@ nodes[person_node["id"]] = person_node
                 child_ref_id = couple_links.get(pid, pid)
                 child_node = nodes.get(child_ref_id)
                 if DEBUG: st.write(f"👨‍👩‍👧 Creating parent couple node: {father['name']} + {mother['name'] if mother_data else 'Unknown'}")
-parent_couple = {
-                "id": parent_couple_id,
+                parent_couple = {
+                    "id": parent_couple_id,
                     "type": "couple",
                     "husband": father,
                     "wife": mother,
