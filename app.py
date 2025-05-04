@@ -67,48 +67,46 @@ def load_family_tree_from_db(root_id="1"):
                 visited.add(person_node["id"])
                 if DEBUG: st.write(f"👤 Creating individual node (spouse missing): {person_node['name']} [{person_node['id']}]")
                 nodes[person_node["id"]] = person_node
-                continue
+            else:
+                husband = {
+                    "id": normalize_id(data["id"]),
+                    "name": data["name"],
+                    "dob": data["dob"],
+                    "valavu": data["valavu"],
+                    "is_alive": data["alive"] == "Yes",
+                    "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}"
+                }
 
-            husband = {
-                "id": normalize_id(data["id"]),
-                "name": data["name"],
-                "dob": data["dob"],
-                "valavu": data["valavu"],
-                "is_alive": data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}"
-            }
+                wife = {
+                    "id": normalize_id(spouse_data["id"]),
+                    "name": spouse_data["name"],
+                    "dob": spouse_data["dob"],
+                    "valavu": spouse_data["valavu"],
+                    "is_alive": spouse_data["alive"] == "Yes",
+                    "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(spouse_data['id'])}"
+                }
 
-            wife = {
-                "id": normalize_id(spouse_data["id"]),
-                "name": spouse_data["name"],
-                "dob": spouse_data["dob"],
-                "valavu": spouse_data["valavu"],
-                "is_alive": spouse_data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(spouse_data['id'])}"
-            }
+                couple_node_id = f"{husband['id']}_couple"
+                if DEBUG: st.write(f"👫 Creating couple node: {husband['name']} + {wife['name']}")
+                couple_node = {
+                    "id": couple_node_id,
+                    "type": "couple",
+                    "husband": husband,
+                    "wife": wife,
+                    "children": []
+                }
+                nodes[couple_node_id] = couple_node
+                couple_links[husband["id"]] = couple_node_id
+                couple_links[wife["id"]] = couple_node_id
 
-            couple_node_id = f"{husband['id']}_couple"
-            if DEBUG: st.write(f"👫 Creating couple node: {husband['name']} + {wife['name']}")
-            couple_node = {
-                "id": couple_node_id,
-                "type": "couple",
-                "husband": husband,
-                "wife": wife,
-                "children": []
-            }
-            nodes[couple_node_id] = couple_node
-            couple_links[husband["id"]] = couple_node_id
-            couple_links[wife["id"]] = couple_node_id
+                visited.add(husband["id"])
+                visited.add(wife["id"])
 
-            visited.add(husband["id"])
-            visited.add(wife["id"])
-
-            for child_id in children_ids:
-                if child_id not in visited and child_id not in queue:
-                    queue.append(child_id)
-                if DEBUG: st.write(f"👶 Adding child link: {child_id} to couple {couple_node_id}")
-                couple_node["children"].append({"id": child_id})
-
+                for child_id in children_ids:
+                    if child_id not in visited and child_id not in queue:
+                        queue.append(child_id)
+                    if DEBUG: st.write(f"👶 Adding child link: {child_id} to couple {couple_node_id}")
+                    couple_node["children"].append({"id": child_id})
         else:
             person_node = {
                 "id": normalize_id(data["id"]),
@@ -122,6 +120,7 @@ def load_family_tree_from_db(root_id="1"):
             if DEBUG: st.write(f"👤 Creating individual node: {person_node['name']} [{person_node['id']}]")
             nodes[person_node["id"]] = person_node
 
+        # 🧩 This part runs regardless of whether spouse was found or not
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
         parent_data = fetch_person_record(father_id) if father_id else None
