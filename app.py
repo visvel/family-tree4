@@ -199,20 +199,7 @@ def load_family_tree_from_db(root_id="P1"):
             new_node["children"] = children
         return new_node
 
-    seen = set()
-    forest = []
-    for node in nodes.values():
-        if node.get("id") not in seen:
-            subtree = build_subtree(node, seen)
-            if subtree:
-                forest.append(subtree)
-
-    # Combine all disjoint trees under a virtual root
-    tree = {
-        "id": "virtual_root",
-        "name": "",
-        "children": forest
-    }
+    tree = build_subtree(tree_root, set())
     return tree
 
 # Inject HTML from external file
