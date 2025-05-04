@@ -79,9 +79,9 @@ def get_d3_tree_html(tree_data):
         .node text {{ font: 12px sans-serif; pointer-events: none; }}
         .link {{ fill: none; stroke: #ccc; stroke-width: 1.5px; }}
     </style>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src=\"https://d3js.org/d3.v7.min.js\"></script>
     <script>
-        const treeData = {json.dumps(tree_data)};
+        const treeData = JSON.parse(`{json.dumps(tree_data)}`);
         console.log("📦 Rendering treeData:", treeData);
 
         const width = 1000, height = 600;
@@ -93,28 +93,28 @@ def get_d3_tree_html(tree_data):
             .attr("transform", "translate(50,50)");
 
         const treeLayout = d3.tree().size([width - 100, height - 100]);
-        const root = d3.hierarchy(treeData, d => d.children);
+        const root = d3.hierarchy(treeData, function(d) {{ return d.children; }});
         treeLayout(root);
 
-        svg.selectAll('link')
+        svg.selectAll('path.link')
             .data(root.links())
             .enter()
             .append('path')
             .attr('class', 'link')
             .attr('d', d3.linkVertical()
-                .x(d => d.x)
-                .y(d => d.y));
+                .x(function(d) {{ return d.x; }})
+                .y(function(d) {{ return d.y; }}));
 
         const node = svg.selectAll('g.node')
             .data(root.descendants())
             .enter()
             .append('g')
             .attr('class', 'node')
-            .attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+            .attr('transform', function(d) {{ return 'translate(' + d.x + ',' + d.y + ')'; }});
 
-        node.each(function(d) {
+        node.each(function(d) {{
             const g = d3.select(this);
-            if (d.data.type === 'couple') {
+            if (d.data.type === 'couple') {{
                 console.log("👫 Rendering couple:", d.data.husband.name, "+", d.data.wife.name);
                 g.append('rect')
                     .attr('x', -70).attr('y', -50).attr('width', 140).attr('height', 30)
@@ -131,7 +131,7 @@ def get_d3_tree_html(tree_data):
                     .attr('x', 0).attr('y', 0)
                     .attr('text-anchor', 'middle')
                     .text(d.data.wife.name);
-            } else {
+            }} else {{
                 g.append('rect')
                     .attr('width', 140)
                     .attr('height', 60)
@@ -141,18 +141,18 @@ def get_d3_tree_html(tree_data):
                     .style('stroke', '#333');
 
                 g.append('a')
-                    .attr('xlink:href', d => d.data.url)
+                    .attr('xlink:href', function(d) {{ return d.data.url; }})
                     .append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '-0.5em')
-                    .text(d => d.data.name);
+                    .text(function(d) {{ return d.data.name; }});
 
                 g.append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '1.2em')
-                    .text(d => (d.data.dob || '') + ' ' + (d.data.valavu || ''));
-            }
-        });
+                    .text(function(d) {{ return (d.data.dob || '') + ' ' + (d.data.valavu || ''); }});
+            }}
+        }});
     </script>
     """
 
