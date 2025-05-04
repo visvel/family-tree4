@@ -142,12 +142,14 @@ def load_family_tree_from_db(root_id="P1"):
                     "gender": mother_data.get("gender", "F") if mother_data else "F"
                 }
                 parent_couple_id = f"{father_id}_couple"
+                child_ref_id = couple_links.get(pid, pid)
+                child_node = nodes.get(child_ref_id)
                 parent_couple = {
                     "id": parent_couple_id,
                     "type": "couple",
                     "husband": father,
                     "wife": mother,
-                    "children": [nodes.get(couple_links.get(pid, pid)) for pid in [pid] if pid in visited]
+                    "children": [child_node] if child_node else []
                 }
                 st.write(f"🧩 Created parent couple node: {parent_couple_id}")
                 nodes[parent_couple_id] = parent_couple
