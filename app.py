@@ -115,7 +115,6 @@ def load_family_tree_from_db(root_id="P1"):
             visited.add(person_node["id"])
             nodes[person_node["id"]] = person_node
 
-        # Parents
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
         if father_id and father_id not in visited and father_id not in queue:
@@ -157,7 +156,6 @@ def load_family_tree_from_db(root_id="P1"):
                 couple_links[mother_id] = parent_couple_id
                 queue.append(father_id)
 
-    # ✅ Final pass: resolve full child nodes
     for node in nodes.values():
         if node.get("type") == "couple":
             resolved_children = []
@@ -176,16 +174,26 @@ def load_family_tree_from_db(root_id="P1"):
 
     root_key = couple_links.get(root_id, root_id)
     tree_root_id = couple_links.get(root_id, root_id)
-    tree_root = nodes.get(tree_root_id)
 
-    # 🔄 Patch: If the root node is actually a child in another couple node, walk up to that parent
-    for node in nodes.values():
-        if node.get("type") == "couple" and any(child.get("id") == tree_root_id for child in node.get("children", [])):
-            st.write(f"🔼 Re-rooting to ancestor couple: {node['id']}")
-            tree_root = node
+    current_root_id = tree_root_id
+    while True:
+        parent_found = False
+        for node in nodes.values():
+            if node.get("type") == "couple":
+                for child in node.get("children", []):
+                    if child.get("id") == current_root_id:
+                        current_root_id = node["id"]
+                        parent_found = True
+                        break
+            if parent_found:
+                break
+        if not parent_found:
             break
 
-    # Filter to only include nodes directly reachable from the root
+    tree_root_id = current_root_id
+    tree_root = nodes.get(tree_root_id)
+    st.write(f"🔼 Re-rooting to ancestor couple: {tree_root_id}")
+
     def build_subtree(node, seen):
         if not node or node.get("id") in seen:
             return None
