@@ -1,25 +1,18 @@
-# app.py
+import streamlit as st
+import sqlite3
+import json
+from collections import deque
 
-try:
-    import streamlit as st
-    import sqlite3
-    import json
-    from collections import deque
-except ModuleNotFoundError as e:
-    raise ImportError("This script must be run in a Streamlit environment where the 'streamlit' module is available.") from e
+def normalize_id(raw_id):
+    try:
+        return str(int(float(raw_id)))
+    except:
+        return str(raw_id).strip()
 
-# Load data from SQLite
-
-def load_family_tree_from_db(root_id="P1"):
+def load_family_tree_from_db(root_id="1"):
     st.write("📥 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
     cursor = conn.cursor()
-
-    def normalize_id(raw_id):
-        try:
-            return str(int(float(raw_id)))
-        except:
-            return str(raw_id).strip()
 
     def fetch_person_record(pid):
         st.write(f"🔎 Querying DB for person: {pid}")
@@ -101,7 +94,6 @@ def load_family_tree_from_db(root_id="P1"):
                 if child_id not in visited and child_id not in queue:
                     queue.append(child_id)
                 couple_node["children"].append({"id": child_id})
-
         else:
             st.write(f"👤 Creating individual node for: {data['name']}")
             person_node = {
@@ -110,7 +102,8 @@ def load_family_tree_from_db(root_id="P1"):
                 "dob": data["dob"],
                 "valavu": data["valavu"],
                 "is_alive": data["alive"] == "Yes",
-                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}"
+                "url": f"https://500-family-tree4.streamlit.app/?id={normalize_id(data['id'])}",
+                "gender": data.get("gender", "")
             }
             visited.add(person_node["id"])
             nodes[person_node["id"]] = person_node
@@ -172,10 +165,7 @@ def load_family_tree_from_db(root_id="P1"):
     st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
 
-    root_key = couple_links.get(root_id, root_id)
-    tree_root_id = couple_links.get(root_id, root_id)
-
-    current_root_id = tree_root_id
+    current_root_id = couple_links.get(root_id, root_id)
     while True:
         parent_found = False
         for node in nodes.values():
@@ -190,9 +180,8 @@ def load_family_tree_from_db(root_id="P1"):
         if not parent_found:
             break
 
-    tree_root_id = current_root_id
-    tree_root = nodes.get(tree_root_id)
-    st.write(f"🔼 Re-rooting to ancestor couple: {tree_root_id}")
+    tree_root = nodes.get(current_root_id)
+    st.write(f"🔼 Re-rooting to ancestor couple: {current_root_id}")
 
     def build_subtree(node, seen):
         if not node or node.get("id") in seen:
@@ -215,13 +204,7 @@ def load_family_tree_from_db(root_id="P1"):
             new_node["children"] = children
         return new_node
 
-    tree = build_subtree(tree_root, set())
-    return tree
-
-# Inject HTML from external file
-def get_html():
-    with open("public/tree.html") as f:
-        return f.read()
+    return build_subtree(tree_root, set())
 
 # Streamlit app
 st.set_page_config(layout="wide")
@@ -238,7 +221,7 @@ tree_data = load_family_tree_from_db(query_id)
 
 if tree_data:
     with open("public/tree.html", "r") as f:
-        html = f.read().replace("__TREE_DATA__", json.dumps(tree_data))
-    st.components.v1.html(html, height=700, scrolling=True)
+        html = f.read().replace("__TREE_DATA__", f"`{json.dumps(tree_data)}`")
+    st.components.v1.html(html, height=800, scrolling=True)
 else:
     st.warning("⚠️ No data found or failed to generate tree.")
