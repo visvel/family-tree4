@@ -8,10 +8,7 @@ DEBUG = False
 MAX_NODES = 50
 
 def normalize_id(raw_id):
-    try:
-        return str(int(float(raw_id)))
-    except:
-        return str(raw_id).strip()
+    return str(raw_id).strip()
 
 def load_family_tree_from_db(root_id="1"):
     if DEBUG: st.write("\U0001F4E5 Starting family tree loading...")
