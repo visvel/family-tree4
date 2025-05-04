@@ -22,9 +22,9 @@
       font-size: 16px;
     }
     .highlighted {
-      stroke: #00ff00;
+      stroke: red;
       stroke-width: 3px;
-      fill: #e0ffe0;
+      fill: #ffe0e0;
     }
     .details {
       font-size: 10px;
@@ -71,8 +71,8 @@
 
     node.each(function (d) {
       const g = d3.select(this);
-      const isHighlighted = d.data.id === highlightedId;
-      if (debug) console.log("Rendering node:", d.data);
+      const isHighlighted = d.data.id === highlightedId ||
+            (d.data.type === "couple" && (d.data.husband?.id === highlightedId || d.data.wife?.id === highlightedId));
 
       function toggleDetails(nodeGroup, personData, xOffset, yOffset) {
         const existing = nodeGroup.selectAll(".details").filter((_, i, nodes) => {
@@ -107,14 +107,16 @@
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        // Husband rectangle
+        const isRed = d.data.husband.id === highlightedId || d.data.wife.id === highlightedId;
+
         g.append("rect")
           .attr("x", -75)
           .attr("y", -20)
           .attr("width", 70)
           .attr("height", 40)
           .attr("fill", "#e6f0ff")
-          .attr("stroke", "#333");
+          .attr("stroke", "#333")
+          .classed("highlighted", d.data.husband.id === highlightedId);
 
         g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
@@ -130,14 +132,14 @@
 
         addExpandIcon(-10, -22, d.data.husband, -75, 0);
 
-        // Wife rectangle
         g.append("rect")
           .attr("x", 5)
           .attr("y", -20)
           .attr("width", 70)
           .attr("height", 40)
           .attr("fill", "#ffe6f0")
-          .attr("stroke", "#333");
+          .attr("stroke", "#333")
+          .classed("highlighted", d.data.wife.id === highlightedId);
 
         g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
@@ -152,10 +154,6 @@
           .style("cursor", "pointer");
 
         addExpandIcon(70, -22, d.data.wife, 5, 0);
-
-        if (isHighlighted || d.data.husband.id === highlightedId || d.data.wife.id === highlightedId) {
-          g.selectAll("rect").classed("highlighted", true);
-        }
 
       } else {
         g.append("rect")
