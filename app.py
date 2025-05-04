@@ -180,8 +180,12 @@ def load_family_tree_from_db(root_id="P1"):
         if node.get("type") == "couple":
             return {
                 **node,
-                "children": [child_subtree for child in node.get("children", []) if (child_subtree := build_subtree(child, seen))]
+                "children": [
+                child_subtree for child in node.get("children", [])
+                if (child_subtree := build_subtree(child, seen))
+            ]
             }
+        st.write(f"🌳 Rendering node: {node.get('name', node.get('id'))}")
         return node
 
     tree = build_subtree(tree_root, set())
