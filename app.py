@@ -161,7 +161,7 @@ def load_family_tree_from_db(root_id="P1"):
             resolved_children = []
             for child_stub in node.get("children", []):
                 cid = child_stub.get("id")
-                full = nodes.get(cid)
+                full = nodes.get(couple_links.get(cid, cid))
                 if full:
                     resolved_children.append(full)
             node["children"] = resolved_children
@@ -170,7 +170,7 @@ def load_family_tree_from_db(root_id="P1"):
     conn.close()
 
     root_key = couple_links.get(root_id, root_id)
-    tree_root = nodes.get(root_key)
+    tree_root = nodes.get(couple_links.get(root_id, root_id))
 
     # Filter to only include nodes directly reachable from the root
     def build_subtree(node, seen):
