@@ -66,7 +66,7 @@ def load_family_tree_from_db(root_id="1"):
                 visited.add(person_node["id"])
                 if DEBUG: st.write(f"👤 Creating individual node (spouse missing): {person_node['name']} [{person_node['id']}]")
                 nodes[person_node["id"]] = person_node
-                # 👉 Children NOT added here
+                continue  # ✅ Prevents children from being processed if spouse missing
             else:
                 husband = {
                     "id": normalize_id(data["id"]),
@@ -120,7 +120,6 @@ def load_family_tree_from_db(root_id="1"):
             if DEBUG: st.write(f"👤 Creating individual node: {person_node['name']} [{person_node['id']}]")
             nodes[person_node["id"]] = person_node
 
-        # 👨‍👩‍👧 Parents processed regardless of spouse presence
         father_id = normalize_id(data.get("father_id", ""))
         mother_id = normalize_id(data.get("mother_id", ""))
         parent_data = fetch_person_record(father_id) if father_id else None
