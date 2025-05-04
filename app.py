@@ -173,7 +173,15 @@ def load_family_tree_from_db(root_id="P1"):
     conn.close()
 
     root_key = couple_links.get(root_id, root_id)
-    tree_root = nodes.get(couple_links.get(root_id, root_id))
+    tree_root_id = couple_links.get(root_id, root_id)
+    tree_root = nodes.get(tree_root_id)
+
+    # 🔄 Patch: If the root node is actually a child in another couple node, walk up to that parent
+    for node in nodes.values():
+        if node.get("type") == "couple" and any(child.get("id") == tree_root_id for child in node.get("children", [])):
+            st.write(f"🔼 Re-rooting to ancestor couple: {node['id']}")
+            tree_root = node
+            break
 
     # Filter to only include nodes directly reachable from the root
     def build_subtree(node, seen):
