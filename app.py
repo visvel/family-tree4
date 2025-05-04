@@ -163,10 +163,10 @@ def load_family_tree_from_db(root_id="P1"):
                 cid = child_stub.get("id")
                 full = nodes.get(couple_links.get(cid, cid))
                 if full:
-                st.write(f"✅ Resolved child ID {cid} → {full.get('id', 'unknown')}")
-                resolved_children.append(full)
-            else:
-                st.warning(f"⚠️ Child ID {cid} could not be resolved in nodes")
+                    st.write(f"✅ Resolved child ID {cid} → {full.get('id', 'unknown')}")
+                    resolved_children.append(full)
+                else:
+                    st.warning(f"⚠️ Child ID {cid} could not be resolved in nodes")
             node["children"] = resolved_children
 
     st.write(f"✅ Total nodes created: {len(nodes)}")
