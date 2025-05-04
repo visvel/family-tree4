@@ -212,7 +212,7 @@ st.set_page_config(layout="wide")
 st.title("Interactive Family Tree")
 
 params = st.query_params
-query_id = str(params.get("id", ["1"])[0]).strip().split("&")[0]
+query_id = str(params.get("id", ["1"])[0]).strip()
 st.write(f"📌 Selected Root ID: {query_id}")
 
 tree_data = load_family_tree_from_db(query_id)
