@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Family Tree</title>
   <style>
     .node rect {
@@ -22,9 +22,9 @@
       font-size: 16px;
     }
     .highlighted {
-      stroke: #00ff00;
+      stroke: red;
       stroke-width: 3px;
-      fill: #e0ffe0;
+      fill: #ffe0e0;
     }
     .details {
       font-size: 10px;
@@ -36,124 +36,124 @@
 <body>
   <div id="tree-container"></div>
   <script type="text/javascript">
-    const treeData = JSON.parse(__TREE_DATA__);
-    const debug = false; // Enable for debug logs
+    const treeData = __TREE_DATA__;
+    const debug = false;
     const queryParams = new URLSearchParams(window.location.search);
     const highlightedId = queryParams.get("id");
 
-    const margin = {top: 20, right: 90, bottom: 30, left: 90},
+    const margin = { top: 20, right: 90, bottom: 30, left: 90 },
           width = 1200 - margin.left - margin.right,
           height = 800 - margin.top - margin.bottom;
 
     const svg = d3.select("#tree-container").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const root = d3.hierarchy(treeData);
     const treeLayout = d3.tree().size([width, height]);
     treeLayout(root);
 
-    svg.selectAll('.link')
-        .data(root.links())
-        .enter().append('path')
-        .attr('class', 'link')
-        .attr('d', d3.linkVertical()
-            .x(d => d.x)
-            .y(d => d.y));
+    svg.selectAll(".link")
+      .data(root.links())
+      .enter().append("path")
+      .attr("class", "link")
+      .attr("d", d3.linkVertical()
+        .x(d => d.x)
+        .y(d => d.y));
 
-    const node = svg.selectAll('.node')
-        .data(root.descendants())
-        .enter().append('g')
-        .attr('class', 'node')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
+    const node = svg.selectAll(".node")
+      .data(root.descendants())
+      .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x},${d.y})`);
 
-    node.each(function(d) {
+    node.each(function (d) {
       const g = d3.select(this);
-      const isHighlighted = d.data.id === highlightedId;
-      if (debug) console.log("Rendering node:", d.data);
+      const isHighlighted = d.data.id === highlightedId ||
+            (d.data.type === "couple" && (d.data.husband?.id === highlightedId || d.data.wife?.id === highlightedId));
 
-      function toggleDetails(nodeGroup, personData, yOffset) {
-        const existing = nodeGroup.selectAll(".details");
+      function toggleDetails(nodeGroup, personData, xOffset, yOffset) {
+        const existing = nodeGroup.selectAll(".details").filter((_, i, nodes) => {
+          return d3.select(nodes[i]).attr("data-owner") === personData.id;
+        });
         if (!existing.empty()) {
           existing.remove();
         } else {
-          nodeGroup.append("text")
-            .attr("class", "details")
-            .attr("x", -65)
-            .attr("y", yOffset + 40)
-            .text(`DOB: ${personData.dob || 'N/A'}`);
-
-          nodeGroup.append("text")
-            .attr("class", "details")
-            .attr("x", -65)
-            .attr("y", yOffset + 52)
-            .text(`Valavu: ${personData.valavu || 'N/A'}`);
-
-          nodeGroup.append("text")
-            .attr("class", "details")
-            .attr("x", -65)
-            .attr("y", yOffset + 64)
-            .text(`Alive: ${personData.is_alive ? 'Yes' : 'No'}`);
+          const info = [
+            `DOB: ${personData.dob || 'N/A'}`,
+            `Valavu: ${personData.valavu || 'N/A'}`,
+            `Alive: ${personData.is_alive ? 'Yes' : 'No'}`
+          ];
+          info.forEach((line, i) => {
+            nodeGroup.append("text")
+              .attr("class", "details")
+              .attr("data-owner", personData.id)
+              .attr("x", xOffset)
+              .attr("y", yOffset + 40 + i * 12)
+              .text(line);
+          });
         }
       }
 
-      function addExpandIcon(x, y, personData, yOffset) {
+      function addExpandIcon(x, y, personData, offsetX, offsetY) {
         g.append("text")
           .attr("class", "expand-icon")
           .attr("x", x)
           .attr("y", y)
-          .text("\u25BC")
-          .on("click", () => toggleDetails(g, personData, yOffset));
+          .text("V")
+          .on("click", () => toggleDetails(g, personData, offsetX, offsetY));
       }
 
       if (d.data.type === 'couple' && d.data.husband && d.data.wife) {
-        g.append('rect')
-          .attr('x', -70)
-          .attr('y', -35)
-          .attr('width', 140)
-          .attr('height', 30)
-          .attr('fill', d.data.husband.id === highlightedId ? '#ffcccc' : '#e6f0ff')
-          .attr('stroke', d.data.husband.id === highlightedId ? 'red' : '#333')
-          .attr('stroke-width', d.data.husband.id === highlightedId ? 3 : 1.5);
+        const isRed = d.data.husband.id === highlightedId || d.data.wife.id === highlightedId;
 
-        const husbandLink = g.append("a")
+        g.append("rect")
+          .attr("x", -75)
+          .attr("y", -20)
+          .attr("width", 70)
+          .attr("height", 40)
+          .attr("fill", "#e6f0ff")
+          .attr("stroke", "#333")
+          .classed("highlighted", d.data.husband.id === highlightedId);
+
+        g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.husband.id}`)
-          .attr("target", "_blank");
-
-        husbandLink.append("text")
+          .attr("target", "_blank")
+          .append("text")
+          .attr("x", -40)
+          .attr("y", 0)
           .attr("text-anchor", "middle")
-          .attr("dy", "-1em")
-          .text(d.data.husband.name || d.data.husband.id)
+          .text(d.data.husband.name)
           .style("fill", "blue")
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(55, -38, d.data.husband, -40);
+        addExpandIcon(-10, -22, d.data.husband, -75, 0);
 
-        g.append('rect')
-          .attr('x', -70)
-          .attr('y', 0)
-          .attr('width', 140)
-          .attr('height', 30)
-          .attr('fill', d.data.wife.id === highlightedId ? '#ffcccc' : '#ffe6f0')
-          .attr('stroke', d.data.wife.id === highlightedId ? 'red' : '#333')
-          .attr('stroke-width', d.data.wife.id === highlightedId ? 3 : 1.5);
+        g.append("rect")
+          .attr("x", 5)
+          .attr("y", -20)
+          .attr("width", 70)
+          .attr("height", 40)
+          .attr("fill", "#ffe6f0")
+          .attr("stroke", "#333")
+          .classed("highlighted", d.data.wife.id === highlightedId);
 
-        const wifeLink = g.append("a")
+        g.append("a")
           .attr("xlink:href", `https://500-family-tree4.streamlit.app/?id=${d.data.wife.id}`)
-          .attr("target", "_blank");
-
-        wifeLink.append("text")
+          .attr("target", "_blank")
+          .append("text")
+          .attr("x", 40)
+          .attr("y", 0)
           .attr("text-anchor", "middle")
-          .attr("dy", "1em")
-          .text(d.data.wife.name || d.data.wife.id)
+          .text(d.data.wife.name)
           .style("fill", "blue")
           .style("text-decoration", "underline")
           .style("cursor", "pointer");
 
-        addExpandIcon(55, 2, d.data.wife, 0);
+        addExpandIcon(70, -22, d.data.wife, 5, 0);
 
       } else {
         g.append("rect")
@@ -161,30 +161,29 @@
           .attr("y", -20)
           .attr("width", 140)
           .attr("height", 40)
-          .attr("fill", isHighlighted ? "#ffcccc" : (d.data.gender === "F" ? "#ffe6f0" : d.data.gender === "M" ? "#e6f0ff" : "#fff"))
-          .attr("stroke", isHighlighted ? "red" : "#333")
-          .attr("stroke-width", isHighlighted ? 3 : 1.5);
+          .attr("fill", d => d.data.gender === "F" ? "#ffe6f0" : d.data.gender === "M" ? "#e6f0ff" : "#fff")
+          .attr("stroke", "#333")
+          .classed("highlighted", isHighlighted);
 
         if (d.data.url) {
-          const link = g.append("a")
-              .attr("xlink:href", d.data.url)
-              .attr("target", "_blank");
-
-          link.append("text")
-              .attr("text-anchor", "middle")
-              .attr("dy", "-0.3em")
-              .text(d.data.name || d.data.id)
-              .style("fill", "blue")
-              .style("text-decoration", "underline")
-              .style("cursor", "pointer");
+          g.append("a")
+            .attr("xlink:href", d.data.url)
+            .attr("target", "_blank")
+            .append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id)
+            .style("fill", "blue")
+            .style("text-decoration", "underline")
+            .style("cursor", "pointer");
         } else {
           g.append("text")
-              .attr("text-anchor", "middle")
-              .attr("dy", "-0.3em")
-              .text(d.data.name || d.data.id);
+            .attr("text-anchor", "middle")
+            .attr("dy", "-0.3em")
+            .text(d.data.name || d.data.id);
         }
 
-        addExpandIcon(55, -22, d.data, -20);
+        addExpandIcon(55, -22, d.data, -65, 0);
       }
     });
   </script>
