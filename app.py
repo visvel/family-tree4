@@ -87,14 +87,20 @@ def load_family_tree_from_db(root_id="P1"):
                         queue.append(cid)
                     child_data = fetch_person_record(cid)
                     if child_data:
-                        child_node = {
-                            "id": normalize_id(child_data["id"]),
-                            "name": child_data["name"],
-                            "dob": child_data["dob"],
-                            "valavu": child_data["valavu"],
-                            "is_alive": child_data["alive"] == "Yes",
-                            "url": f"https://abc.com?id={normalize_id(child_data['id'])}"
-                        }
+                        child_id = normalize_id(child_data["id"])
+                        child_couple_id = f"{child_id}_couple"
+                        if child_couple_id in nodes:
+                            child_node = nodes[child_couple_id]
+                            st.write(f"🔁 Replacing {child_id} with couple node {child_couple_id}")
+                        else:
+                            child_node = {
+                                "id": child_id,
+                                "name": child_data["name"],
+                                "dob": child_data["dob"],
+                                "valavu": child_data["valavu"],
+                                "is_alive": child_data["alive"] == "Yes",
+                                "url": f"https://abc.com?id={child_id}"
+                            }
                         st.write(f"👶 Adding child {child_node['name']} to couple {couple_node['id']}")
                         couple_node["children"].append(child_node)
                 st.write(f"🧩 Node created: {couple_node['id']}")
@@ -109,14 +115,20 @@ def load_family_tree_from_db(root_id="P1"):
             for cid in children_ids:
                 child_data = fetch_person_record(cid)
                 if child_data:
-                    child_node = {
-                        "id": normalize_id(child_data["id"]),
-                        "name": child_data["name"],
-                        "dob": child_data["dob"],
-                        "valavu": child_data["valavu"],
-                        "is_alive": child_data["alive"] == "Yes",
-                        "url": f"https://abc.com?id={normalize_id(child_data['id'])}"
-                    }
+                    child_id = normalize_id(child_data["id"])
+                    child_couple_id = f"{child_id}_couple"
+                    if child_couple_id in nodes:
+                        child_node = nodes[child_couple_id]
+                        st.write(f"🔁 Replacing {child_id} with couple node {child_couple_id}")
+                    else:
+                        child_node = {
+                            "id": child_id,
+                            "name": child_data["name"],
+                            "dob": child_data["dob"],
+                            "valavu": child_data["valavu"],
+                            "is_alive": child_data["alive"] == "Yes",
+                            "url": f"https://abc.com?id={child_id}"
+                        }
                     st.write(f"👶 Adding child {child_node['name']} to {person['id']}")
                     person["children"].append(child_node)
         st.write(f"🧩 Node created: {person['id']} ({person['name']})")
