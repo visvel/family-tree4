@@ -124,7 +124,7 @@
           .attr("y", -20)
           .attr("width", 65)
           .attr("height", 40)
-          .attr("fill", "#e6f0ff")
+          .attr("fill", "#add8e6")
           .attr("stroke", "#333")
           .classed("highlighted", isHighlighted);
 
@@ -148,7 +148,7 @@
           .attr("y", -20)
           .attr("width", 65)
           .attr("height", 40)
-          .attr("fill", "#ffe6f0")
+          .attr("fill", "#ffc0cb")
           .attr("stroke", "#333")
           .classed("highlighted", isHighlighted);
 
@@ -167,12 +167,14 @@
         addExpandIcon(55, -22, d.data.wife, -5, 0);
 
       } else {
+        // Individual node — no gender field, use fallback coloring if desired
+        const fillColor = "#fff";  // Default white
         g.append("rect")
           .attr("x", -70)
           .attr("y", -20)
           .attr("width", 140)
           .attr("height", 40)
-          .attr("fill", d => d.data.gender === "F" ? "#ffe6f0" : d.data.gender === "M" ? "#e6f0ff" : "#fff")
+          .attr("fill", fillColor)
           .attr("stroke", "#333")
           .classed("highlighted", isHighlighted);
 
