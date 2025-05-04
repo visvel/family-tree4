@@ -41,19 +41,30 @@
     const queryParams = new URLSearchParams(window.location.search);
     const highlightedId = queryParams.get("id");
 
-    const margin = { top: 20, right: 90, bottom: 30, left: 200 },
-          width = 1400 - margin.left - margin.right,
+    const margin = { top: 20, right: 90, bottom: 30, left: 90 },
+          width = 1200 - margin.left - margin.right,
           height = 1000 - margin.top - margin.bottom;
 
     const svg = d3.select("#tree-container").append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-    .append("g")
+      .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const root = d3.hierarchy(treeData);
     const treeLayout = d3.tree().nodeSize([200, 150]);
     treeLayout(root);
+
+    // Shift entire layout to center horizontally
+    let minX = Infinity, maxX = -Infinity;
+    root.descendants().forEach(d => {
+      if (d.x < minX) minX = d.x;
+      if (d.x > maxX) maxX = d.x;
+    });
+    const shiftX = -minX + 20;
+    root.descendants().forEach(d => { d.x += shiftX; });
+    const totalWidth = maxX - minX + margin.left + margin.right + 40;
+    d3.select("svg").attr("width", totalWidth);
 
     svg.selectAll(".link")
       .data(root.links())
