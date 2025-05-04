@@ -9,6 +9,7 @@ except ModuleNotFoundError as e:
     raise ImportError("This script must be run in a Streamlit environment where the 'streamlit' module is available.") from e
 
 # Load data from SQLite
+
 def load_family_tree_from_db(root_id="P1"):
     st.write("📥 Starting family tree loading...")
     conn = sqlite3.connect("family_tree.db")
@@ -31,118 +32,128 @@ def load_family_tree_from_db(root_id="P1"):
         return dict(zip(columns, row))
 
     visited = set()
+    queue = deque()
     nodes = {}
     couple_links = {}
-    queue = deque([normalize_id(root_id)])
+
+    root_id = normalize_id(root_id)
+    queue.append(root_id)
 
     while queue:
         st.write(f"📬 Queue: {[x for x in queue]}")
         pid = queue.popleft()
         pid = normalize_id(pid)
+
         if pid in visited:
             st.write(f"🔁 Skipping already visited person: {pid} to avoid cycles")
             continue
-        visited.add(pid)
 
-        st.write(f"🔍 Fetching person: {pid}")
         data = fetch_person_record(pid)
         if not data:
             continue
 
-        person = {
-            "id": normalize_id(data["id"]),
-            "name": data["name"],
-            "dob": data["dob"],
-            "valavu": data["valavu"],
-            "is_alive": data["alive"] == "Yes",
-            "url": f"https://abc.com?id={normalize_id(data['id'])}"
-        }
-
         spouse_ids = [normalize_id(sid) for sid in str(data.get("spouse_id", "")).split(";") if sid.strip() and sid.lower() != "nan"]
         children_ids = [normalize_id(cid) for cid in str(data.get("children_ids", "")).split(";") if cid.strip() and cid.lower() != "nan"]
 
-        st.write(f"👫 Spouse IDs: {spouse_ids} | 👶 Children IDs: {children_ids}")
-
         if spouse_ids:
-            spouse_id = spouse_ids[0]  # Support one spouse for now
+            spouse_id = spouse_ids[0]
             spouse_data = fetch_person_record(spouse_id)
-            if spouse_data:
-                spouse = {
-                    "id": normalize_id(spouse_data["id"]),
-                    "name": spouse_data["name"],
-                    "dob": spouse_data["dob"],
-                    "valavu": spouse_data["valavu"],
-                    "is_alive": spouse_data["alive"] == "Yes",
-                    "url": f"https://abc.com?id={normalize_id(spouse_data['id'])}"
-                }
-                st.write(f"💍 {person['name']} is married to {spouse['name']}")
-                couple_id = f"{person['id']}_couple"
-                couple_node = {
-                    "id": couple_id,
-                    "type": "couple",
-                    "husband": person if data.get("gender") == "M" else spouse,
-                    "wife": spouse if data.get("gender") == "M" else person,
-                    "children": []
-                }
-                nodes[couple_id] = couple_node
-                couple_links[person["id"]] = couple_id
-                couple_links[spouse["id"]] = couple_id
+            if not spouse_data:
+                continue
 
-                for cid in children_ids:
-                    if cid not in visited:
-                        queue.append(cid)
+            husband = {
+                "id": normalize_id(data["id"]),
+                "name": data["name"],
+                "dob": data["dob"],
+                "valavu": data["valavu"],
+                "is_alive": data["alive"] == "Yes",
+                "url": f"https://abc.com?id={normalize_id(data['id'])}",
+                "gender": data.get("gender", "M")
+            }
 
-        if children_ids:
-            person["children"] = []
-            for cid in children_ids:
-                if cid not in visited:
-                    queue.append(cid)
+            wife = {
+                "id": normalize_id(spouse_data["id"]),
+                "name": spouse_data["name"],
+                "dob": spouse_data["dob"],
+                "valavu": spouse_data["valavu"],
+                "is_alive": spouse_data["alive"] == "Yes",
+                "url": f"https://abc.com?id={normalize_id(spouse_data['id'])}",
+                "gender": spouse_data.get("gender", "F")
+            }
 
-        if person["id"] in couple_links:
-            # Attach children to couple
-            couple_node = nodes[couple_links[person["id"]]]
-            for cid in children_ids:
-                child_id = normalize_id(cid)
-                child_node = nodes.get(couple_links.get(child_id), None)
-                if not child_node:
-                    child_data = fetch_person_record(child_id)
-                    if child_data:
-                        child_node = {
-                            "id": child_id,
-                            "name": child_data["name"],
-                            "dob": child_data["dob"],
-                            "valavu": child_data["valavu"],
-                            "is_alive": child_data["alive"] == "Yes",
-                            "url": f"https://abc.com?id={child_id}"
-                        }
-                if child_node:
-                    st.write(f"👶 Adding child {child_node['name']} to couple {couple_node['id']}")
-                    couple_node["children"].append(child_node)
+            st.write(f"💍 Creating couple node for: {husband['name']} and {wife['name']}")
+            couple_node = {
+                "id": f"{husband['id']}_couple",
+                "type": "couple",
+                "husband": husband,
+                "wife": wife,
+                "children": []
+            }
+            nodes[couple_node["id"]] = couple_node
+            couple_links[husband["id"]] = couple_node["id"]
+            couple_links[wife["id"]] = couple_node["id"]
+
+            visited.add(husband["id"])
+            visited.add(wife["id"])
+
+            for child_id in children_ids:
+                if child_id not in visited:
+                    queue.append(child_id)
+
         else:
-            for cid in children_ids:
-                child_id = normalize_id(cid)
-                child_node = nodes.get(couple_links.get(child_id), None)
-                if not child_node:
-                    child_data = fetch_person_record(child_id)
-                    if child_data:
-                        child_node = {
-                            "id": child_id,
-                            "name": child_data["name"],
-                            "dob": child_data["dob"],
-                            "valavu": child_data["valavu"],
-                            "is_alive": child_data["alive"] == "Yes",
-                            "url": f"https://abc.com?id={child_id}"
-                        }
-                if child_node:
-                    person.setdefault("children", []).append(child_node)
+            st.write(f"👤 Creating individual node for: {data['name']}")
+            person_node = {
+                "id": normalize_id(data["id"]),
+                "name": data["name"],
+                "dob": data["dob"],
+                "valavu": data["valavu"],
+                "is_alive": data["alive"] == "Yes",
+                "url": f"https://abc.com?id={normalize_id(data['id'])}"
+            }
+            visited.add(person_node["id"])
+            nodes[person_node["id"]] = person_node
 
-        if person["id"] not in couple_links:
-            st.write(f"🧩 Node created: {person['id']} ({person['name']})")
-            nodes[person["id"]] = person
+        # Parents
+        father_id = normalize_id(data.get("father_id", ""))
+        mother_id = normalize_id(data.get("mother_id", ""))
+        if father_id and father_id not in visited:
+            st.write(f"👨‍👩‍👧 Creating parent couple for: {father_id} and {mother_id}")
+            parent_data = fetch_person_record(father_id)
+            mother_data = fetch_person_record(mother_id) if mother_id else None
+            if parent_data:
+                father = {
+                    "id": father_id,
+                    "name": parent_data["name"],
+                    "dob": parent_data["dob"],
+                    "valavu": parent_data["valavu"],
+                    "is_alive": parent_data["alive"] == "Yes",
+                    "url": f"https://abc.com?id={father_id}",
+                    "gender": parent_data.get("gender", "M")
+                }
+                mother = {
+                    "id": mother_id,
+                    "name": mother_data["name"] if mother_data else "",
+                    "dob": mother_data["dob"] if mother_data else "",
+                    "valavu": mother_data["valavu"] if mother_data else "",
+                    "is_alive": mother_data["alive"] == "Yes" if mother_data else False,
+                    "url": f"https://abc.com?id={mother_id}" if mother_data else "",
+                    "gender": mother_data.get("gender", "F") if mother_data else "F"
+                }
+                parent_couple = {
+                    "id": f"{father_id}_couple",
+                    "type": "couple",
+                    "husband": father,
+                    "wife": mother,
+                    "children": [nodes.get(couple_links.get(pid, pid)) for pid in [pid] if pid in visited]
+                }
+                nodes[parent_couple["id"]] = parent_couple
+                couple_links[father_id] = parent_couple["id"]
+                couple_links[mother_id] = parent_couple["id"]
+                queue.append(father_id)
 
     st.write(f"✅ Total nodes created: {len(nodes)}")
     conn.close()
-    return nodes.get(root_id) or list(nodes.values())[0]
+    return nodes.get(couple_links.get(root_id, root_id)) or list(nodes.values())[0]
 
 # Inject HTML from external file
 def get_html():
